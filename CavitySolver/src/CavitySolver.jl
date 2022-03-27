@@ -95,5 +95,6 @@ e, f = size(q)
 show(a*b + c*d)
 @printf "\n"
 show(e*f)
+@printf "\n"
 
 adv(dims, bcs, iu, iv, ip, q)
