@@ -24,8 +24,6 @@ module advection
 		x_indexers = Indexer(reg_plus_i, reg_minus_i, reg_plus_j, reg_minus_j);
 		y_indexers = Indexer(reg_plus_i, reg_minus_i, reg_plus_j, reg_minus_j);
 		calculate_nq_x_dir(dims, bcs, iu, iv, q, nq, 2:nx-2, 2:ny-1,x_indexers, y_indexers)
-
-		calc = final_calc_v
 		calculate_nq_y_dir(dims, bcs, iu, iv, q, nq, 2:nx-1, 2:ny-2,x_indexers, y_indexers)
 
 		##
@@ -43,11 +41,58 @@ module advection
 		## Bottom Left
 		##
 		
-		x_indexers = Indexer(reg_plus_i, reg_minus_i, reg_plus_j, u_bot_minus_j);
-		y_indexers = Indexer(reg_plus_i, reg_minus_i, reg_plus_j, v_bot_minus_j);
-		calculate_nq_x_dir(dims, bcs, iu, iv, q, nq, 2:nx-2, 1:1, x_indexers, y_indexers)
+		x_indexers = Indexer(reg_plus_i, u_left_minus_i, reg_plus_j, u_bot_minus_j);
+		y_indexers = Indexer(reg_plus_i, v_left_minus_i, reg_plus_j, v_bot_minus_j);
+		calculate_nq_x_dir(dims, bcs, iu, iv, q, nq, 1:1, 1:1, x_indexers, y_indexers)
 		# y dir
-		calculate_nq_y_dir(dims, bcs, iu, iv, q, nq, 2:nx-1, 1:1, x_indexers, y_indexers)
+		calculate_nq_y_dir(dims, bcs, iu, iv, q, nq, 1:1, 1:1, x_indexers, y_indexers)
+
+		##
+		## Bottom Right
+		##
+		
+		x_indexers = Indexer(u_right_plus_i, reg_minus_i, reg_plus_j, u_bot_minus_j);
+		y_indexers = Indexer(v_right_plus_i, reg_minus_i, reg_plus_j, v_bot_minus_j);
+		calculate_nq_x_dir(dims, bcs, iu, iv, q, nq, nx-1:nx-1, 1:1, x_indexers, y_indexers)
+		# y dir
+		# TODO: outside the boundary here if we index nx:nx
+		calculate_nq_y_dir(dims, bcs, iu, iv, q, nq, nx-1:nx-1, 1:1, x_indexers, y_indexers) 
+
+
+		##
+		## Left Inner
+		##
+		
+		# x dir
+		x_indexers = Indexer(reg_plus_i, u_left_minus_i, reg_plus_j, reg_minus_j);
+		y_indexers = Indexer(reg_plus_i, v_left_minus_i, reg_plus_j, reg_minus_j);
+		calculate_nq_x_dir(dims, bcs, iu, iv, q, nq, 1:1, 2:ny-1, x_indexers, y_indexers)
+		# y dir
+		calculate_nq_y_dir(dims, bcs, iu, iv, q, nq, 1:1, 2:ny-2, x_indexers, y_indexers)
+
+		##
+		## Right Inner
+		##
+		
+		# x dir
+		x_indexers = Indexer(u_right_plus_i, reg_minus_i, reg_plus_j, reg_minus_j);
+		y_indexers = Indexer(v_right_plus_i, reg_minus_i, reg_plus_j, reg_minus_j);
+		calculate_nq_x_dir(dims, bcs, iu, iv, q, nq, nx-1:nx-1, 2:ny-1, x_indexers, y_indexers)
+		# y dir
+		# TODO: outside the boundary here if we index nx:nx which is required for the v values
+		calculate_nq_y_dir(dims, bcs, iu, iv, q, nq, nx-1:nx-1, 2:ny-2, x_indexers, y_indexers)
+
+		##
+		## TOP Inner
+		##
+		# x dir
+		x_indexers = Indexer(reg_plus_i, reg_minus_i, u_top_plus_j, reg_minus_j);
+		y_indexers = Indexer(reg_plus_i, reg_minus_i, v_top_plus_j, reg_minus_j);
+		# TODO: this bound needs to be 
+		calculate_nq_x_dir(dims, bcs, iu, iv, q, nq, 2:nx-1, ny:ny, x_indexers, y_indexers)
+		# y dir
+		# TODO: outside the boundary here if we index nx:nx which is required for the v values
+		calculate_nq_y_dir(dims, bcs, iu, iv, q, nq, 2:nx-1, ny-1:ny-1, x_indexers, y_indexers)
 
 		## RETURN
 
@@ -160,6 +205,6 @@ module advection
 	u_left_minus_i(q::Matrix{Float64}, indexer::Matrix{Int64}, bcs::BoundaryConditions, i::Int, j::Int) =
 		(1/2) * (bcs.u_l[j] + q[indexer[i,j]])
 	u_right_plus_i(q::Matrix{Float64}, indexer::Matrix{Int64}, bcs::BoundaryConditions, i::Int, j::Int) =
-		(1/2) * (bcs.v_r[j] + q[indexer[i,j]])
+		(1/2) * (bcs.u_r[j] + q[indexer[i,j]])
 
 end
