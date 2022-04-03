@@ -5,6 +5,8 @@ module advection
 
 	export adv
 
+	# represents all the lambda functions required to calculate 
+	# the advection in the X direction
 	struct IndexerX
 		u_bar_x_left::Function
 		u_bar_x_right::Function
@@ -14,6 +16,8 @@ module advection
 		v_bar_x_bot::Function
 	end
 
+	# represents all the lambda functions required to calculate 
+	# the advection in the Y direction
 	struct IndexerY
 		v_bar_x_left::Function
 		v_bar_x_right::Function
@@ -68,48 +72,60 @@ module advection
 		y_dir_idx = IndexerY(reg_bar_left, y_dir_v_bar_right_bc, reg_bar_top, y_dir_v_bar_bot_bc, y_dir_u_bar_left, y_dir_u_bar_right_bc)
 		calculate_nq(dims, bcs, iu, iv, q, nq, nx:nx, 1:1, y_dir_idx)
 
+		##
+		## Left Inner
+		##
+		
+		x_dir_idx = IndexerX(x_dir_u_bar_left_bc, reg_bar_right, reg_bar_top, reg_bar_bot, x_dir_v_bar_top, x_dir_v_bar_bot)
+		calculate_nq(dims, bcs, iu, iv, q, nq, 1:1, 2:ny-1, x_dir_idx)
 
-		# ##
-		# ## Left Inner
-		# ##
-		# 
-		# # x dir
-		# x_indexers = Indexer(reg_plus_i, u_left_minus_i, reg_plus_j, reg_minus_j);
-		# y_indexers = Indexer(reg_plus_i, v_left_minus_i, reg_plus_j, reg_minus_j);
-		# calculate_nq_x_dir(dims, bcs, iu, iv, q, nq, 1:1, 2:ny-1, x_indexers, y_indexers)
-		# # y dir
-		# calculate_nq_y_dir(dims, bcs, iu, iv, q, nq, 1:1, 2:ny-2, x_indexers, y_indexers)
+		y_dir_idx = IndexerY(y_dir_v_bar_left_bc, reg_bar_right, reg_bar_top, reg_bar_bot, y_dir_u_bar_left_bc, y_dir_u_bar_right)
+		calculate_nq(dims, bcs, iu, iv, q, nq, 1:1, 2:ny-2, y_dir_idx)
 
-		# ##
-		# ## Right Inner
-		# ##
-		# 
-		# # x dir
-		# x_indexers = Indexer(u_right_plus_i, reg_minus_i, reg_plus_j, reg_minus_j);
-		# y_indexers = Indexer(v_right_plus_i, reg_minus_i, reg_plus_j, reg_minus_j);
-		# calculate_nq_x_dir(dims, bcs, iu, iv, q, nq, nx-1:nx-1, 2:ny-1, x_indexers, y_indexers)
-		# # y dir
-		# # TODO: outside the boundary here if we index nx:nx which is required for the v values
-		# calculate_nq_y_dir(dims, bcs, iu, iv, q, nq, nx-1:nx-1, 2:ny-2, x_indexers, y_indexers)
+		##
+		## Right Inner
+		##
+		
+		x_dir_idx = IndexerX(reg_bar_left, x_dir_u_bar_right_bc, reg_bar_top, reg_bar_bot, x_dir_v_bar_top, x_dir_v_bar_bot)
+		calculate_nq(dims, bcs, iu, iv, q, nq, nx-1:nx-1, 2:ny-1, x_dir_idx)
 
-		# ##
-		# ## TOP Inner
-		# ##
-		# # x dir
-		# x_indexers = Indexer(reg_plus_i, reg_minus_i, u_top_plus_j, reg_minus_j);
-		# y_indexers = Indexer(reg_plus_i, reg_minus_i, v_top_plus_j, reg_minus_j);
-		# # TODO: this bound needs to be 
-		# calculate_nq_x_dir(dims, bcs, iu, iv, q, nq, 2:nx-1, ny:ny, x_indexers, y_indexers)
-		# # y dir
-		# # TODO: outside the boundary here if we index nx:nx which is required for the v values
-		# calculate_nq_y_dir(dims, bcs, iu, iv, q, nq, 2:nx-1, ny-1:ny-1, x_indexers, y_indexers)
+		y_dir_idx = IndexerY(reg_bar_left, y_dir_v_bar_right_bc, reg_bar_top, reg_bar_bot, y_dir_u_bar_left, y_dir_u_bar_right_bc)
+		calculate_nq(dims, bcs, iu, iv, q, nq, nx:nx, 2:ny-2, y_dir_idx)
 
-		## RETURN
+		##
+		## TOP Inner
+		##
+		
+		x_dir_idx = IndexerX(reg_bar_left, reg_bar_right, x_dir_u_bar_top_bc, reg_bar_bot, x_dir_v_bar_top_bc, x_dir_v_bar_bot)
+		calculate_nq(dims, bcs, iu, iv, q, nq, 2:nx-2, ny:ny, x_dir_idx)
+
+		y_dir_idx = IndexerY(reg_bar_left, reg_bar_right, y_dir_v_bar_top_bc, reg_bar_bot, y_dir_u_bar_left, y_dir_u_bar_right)
+		calculate_nq(dims, bcs, iu, iv, q, nq, 2:nx-1, ny-1:ny-1, y_dir_idx)
+
+		##
+		## TOP Left
+		##
+
+		x_dir_idx = IndexerX(x_dir_u_bar_left_bc, reg_bar_right, x_dir_u_bar_top_bc, reg_bar_bot, x_dir_v_bar_top_bc, x_dir_v_bar_bot)
+		calculate_nq(dims, bcs, iu, iv, q, nq, 1:1, ny:ny, x_dir_idx)
+
+		y_dir_idx = IndexerY(y_dir_v_bar_left_bc, reg_bar_right, y_dir_v_bar_top_bc, reg_bar_bot, y_dir_u_bar_left_bc, y_dir_u_bar_right)
+		calculate_nq(dims, bcs, iu, iv, q, nq, 1:1, ny-1:ny-1, y_dir_idx)
+
+		##
+		## TOP Right
+		##
+
+		x_dir_idx = IndexerX(reg_bar_left, x_dir_u_bar_right_bc, x_dir_u_bar_top_bc, reg_bar_bot, x_dir_v_bar_top_bc, x_dir_v_bar_bot)
+		calculate_nq(dims, bcs, iu, iv, q, nq, nx-1:nx-1, ny:ny, x_dir_idx)
+
+		y_dir_idx = IndexerY(reg_bar_left, y_dir_v_bar_right_bc, y_dir_v_bar_top_bc, reg_bar_bot, y_dir_u_bar_left, y_dir_u_bar_right_bc)
+		calculate_nq(dims, bcs, iu, iv, q, nq, nx:nx, ny-1:ny-1, y_dir_idx)
 
 		return nq
 	end
 
-	# calculate entire nq for loop
+	# calculate entire nq for loop for X direction values
 	function calculate_nq(
 		dims::Dims,
 		bcs::BoundaryConditions,
@@ -141,6 +157,7 @@ module advection
 		
 	end
 
+	# calculate entire nq for loop for y direction values
 	function calculate_nq(
 		dims::Dims,
 		bcs::BoundaryConditions,
@@ -152,7 +169,6 @@ module advection
 		y_range::UnitRange{Int},
 		indexer::IndexerY
 	)
-
 		for i = x_range
 			for j = y_range
 				v_bar_x_left = indexer.v_bar_x_left(q, iv, bcs, i,j)
@@ -171,7 +187,7 @@ module advection
 	end
 
 	######
-	###### GENERAL INDEXING - can be used for either x or y directions
+	###### GENERAL INDEXING - can be used for either x or y directions as long as you are not on a boundary
 	######
 
 	reg_bar_left(q::Matrix{Float64}, indexer::Matrix{Int64}, bcs::BoundaryConditions, i::Int, j::Int) =
@@ -271,7 +287,4 @@ module advection
 
 	y_dir_u_bar_right_bc(q::Matrix{Float64}, indexer::Matrix{Int64}, bcs::BoundaryConditions, i::Int, j::Int) =
 		(1/2) * (bcs.u_r[j] + bcs.u_r[j+1])
-
-
-
 end
