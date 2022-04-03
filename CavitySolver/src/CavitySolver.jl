@@ -1,5 +1,6 @@
 include("structs.jl")
 include("adv.jl")
+include("lap.jl")
 
 module CavitySolver
 	using Printf
@@ -7,9 +8,10 @@ module CavitySolver
 	using .Main.Structs:BoundaryConditions
 	using .Main.Structs:Dims
 	using .Main.advection: adv
+	using .Main.laplacian: lap
 
 	export create_dims, create_iu_iv, test, create_boundary_conditions, create_ip
-	export adv, BoundaryConditions, Dims
+	export adv, lap, BoundaryConditions, Dims
 
 	function create_dims(length::Float64, height::Float64, nx::Int, ny::Int)::Dims 
 		np = nx * ny
@@ -81,7 +83,8 @@ module CavitySolver
 end
 
 using .CavitySolver
-using .Structs
+#using .Main.laplacian: lap
+#using .Structs
 using Printf
 
 const dims = create_dims(1.0, 1.0, 10,10)
@@ -97,4 +100,6 @@ show(a*b + c*d)
 show(e*f)
 @printf "\n"
 
-adv(dims, bcs, iu, iv, ip, q)
+lap(dims, bcs, iu, iv, q)
+
+#adv(dims, bcs, iu, iv, ip, q)
