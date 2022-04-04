@@ -3,6 +3,7 @@ include("adv.jl")
 include("lap.jl")
 include("gradient.jl")
 include("divergence.jl")
+include("conjugate_gradient.jl")
 
 module CavitySolver
 	using Printf
@@ -13,9 +14,10 @@ module CavitySolver
 	using .Main.laplacian: lap
 	using .Main.gradient: grad
 	using .Main.divergence: div_
+	using .Main.conjugate_gradient: conj_grad
 
 	export create_dims, create_iu_iv, test, create_boundary_conditions, create_ip
-	export adv, lap, grad, div_, BoundaryConditions, Dims
+	export adv, lap, grad, div_, conj_grad, BoundaryConditions, Dims
 	export execute_solver, SolverResults
 
 	function create_dims(length::Float64, height::Float64, nx::Int, ny::Int)::Dims 
@@ -137,7 +139,8 @@ module CavitySolver
 			q_nm1 = q_n
 			q_n = q_np1
 			p_n = p_np1
-#
+
+			#
 			# run calculations
 			# 
 			lap_bc_n = lap(dims, bcs, iu, iv, q_n)
@@ -150,20 +153,41 @@ module CavitySolver
 			# assemble things
 			#
 
+			# here S =  I + dt nu / 2 L
+			# which becomes S = (I + dt L / (2 Re))
+			#
+			# the whole term is divided by dt
 			sq_rhs = 
+				# start of S * u_n term
 				q_n / dt
 				+
 				(1 / (2 * re)) * lap_bc_n
+				# end of S * u_n term
+				# start of advection term
 				+
 				(3/2) * adv_n
 				-
 				(1/2) * adv_nm1
 
-			#rq_lhs = (
-			#	(1/dt) * q_n 
-			#	-
-			#	(1 / (2 * re)) * lap_nobc_n
-			#)
+			# equivalent to R * u_f
+			# because R = I - dt * nu * L / 2
+			# so we change to R = I - L / (2 re) 
+			# after multiplying by u_f then we have 
+			# R * u_f = u_f - L*u_f / (2 * re)
+			#
+			# the whole term is effectivly divided by dt
+			rq_lhs =
+				q_n / dt
+				-
+				(1 / (2 * re)) * lap_nobc_n
+
+			# TODO: determine if the laplacian in R^-1 acts 
+			# with or without boundary conditions
+			# the other L (laplace) operators in R have no boundary conditions
+			# but the L (laplace) in S _does_ have boundary conditions
+			
+			# TODO: what is up with all the bc_L / bc_L^n+1  / bc_D terms in the revised
+			# set of fractional step equations?
 
 			break
 			
