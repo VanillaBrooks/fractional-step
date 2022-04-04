@@ -14,6 +14,18 @@ module Structs
 		v_l::Matrix{Float64}
 	end
 
+	Base.maximum(bcs::BoundaryConditions)::Float64 = 
+		max(
+			maximum(bcs.u_t),
+			maximum(bcs.u_b),
+			maximum(bcs.u_r),
+			maximum(bcs.u_l),
+			maximum(bcs.v_t),
+			maximum(bcs.v_b),
+			maximum(bcs.v_r),
+			maximum(bcs.v_l)
+		)
+
 	struct Dims
 		nx::Int
 		ny::Int
