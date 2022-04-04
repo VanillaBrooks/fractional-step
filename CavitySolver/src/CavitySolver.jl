@@ -108,8 +108,8 @@ show(a*b + c*d)
 show(e*f)
 @printf "\n"
 
-#lap(dims, bcs, iu, iv, q)
-#adv(dims, bcs, iu, iv, ip, q)
-#grad(dims, p, iu, iv, ip)
+lap(dims, bcs, iu, iv, q)
+adv(dims, bcs, iu, iv, ip, q)
+grad(dims, p, iu, iv, ip)
 
 div_(dims, bcs, q, iu, iv, ip)

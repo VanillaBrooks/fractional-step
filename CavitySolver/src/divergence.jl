@@ -95,7 +95,7 @@ module divergence
 		return div
 	end
 
-	function calculate_divergence(
+	@inline function calculate_divergence(
 		dims::Dims,
 		bcs::BoundaryConditions,
 		q::Matrix{Float64},
@@ -109,8 +109,8 @@ module divergence
 	)
 		for i = x_range
 			for j = y_range 
-				center_x = indexer.center_x(q, bcs, iu, i,j)
-				center_y = indexer.center_y(q, bcs, iv, i,j)
+				center_x = indexer.center_x(q, bcs, iu, i, j)
+				center_y = indexer.center_y(q, bcs, iv, i, j)
 
 				left_x = indexer.left_x(q, bcs, iu, i,j)
 				bottom_y = indexer.bottom_y(q, bcs, iv, i,j)
