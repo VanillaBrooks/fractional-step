@@ -2,6 +2,7 @@ include("structs.jl")
 include("adv.jl")
 include("lap.jl")
 include("gradient.jl")
+include("divergence.jl")
 
 module CavitySolver
 	using Printf
@@ -11,9 +12,10 @@ module CavitySolver
 	using .Main.advection: adv
 	using .Main.laplacian: lap
 	using .Main.gradient: grad
+	using .Main.divergence: div_
 
 	export create_dims, create_iu_iv, test, create_boundary_conditions, create_ip
-	export adv, lap, grad, BoundaryConditions, Dims
+	export adv, lap, grad, div_, BoundaryConditions, Dims
 
 	function create_dims(length::Float64, height::Float64, nx::Int, ny::Int)::Dims 
 		np = nx * ny
@@ -108,4 +110,6 @@ show(e*f)
 
 #lap(dims, bcs, iu, iv, q)
 #adv(dims, bcs, iu, iv, ip, q)
-grad(dims, p, iu, iv, ip)
+#grad(dims, p, iu, iv, ip)
+
+div_(dims, bcs, q, iu, iv, ip)
