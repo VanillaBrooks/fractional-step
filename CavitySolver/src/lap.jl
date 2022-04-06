@@ -114,7 +114,7 @@ module laplacian
 		calc_lap(dims, Lq, bcs, 1:1, ny-1:ny-1, q, iv, indexer)
 
 		####
-		#### Top Inner
+		#### Top Right
 		####
 
 		# u velocity points
@@ -162,7 +162,7 @@ module laplacian
 	reg_left(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		q[indexer[i-1, j]]
 	reg_right(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		q[indexer[i, j]]
+		q[indexer[i+1, j]]
 	reg_top(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		q[indexer[i, j+1]]
 	reg_bot(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
