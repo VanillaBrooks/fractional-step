@@ -6,13 +6,13 @@ module gradient
 	
 	function grad(
 		dims::Dims, 
-		p::Matrix{Float64}, 
+		p::Vector{Float64}, 
 		iu::Matrix{Int64},
 		iv::Matrix{Int64},
 		ip::Matrix{Int64}
-		)::Matrix{Float64}
+		)::Vector{Float64}
 
-		grad = zeros(dims.nu,1)
+		grad = zeros(dims.nu)
 
 		nx = dims.nx
 		ny = dims.ny
@@ -22,7 +22,7 @@ module gradient
 		# TODO: in lecture this was 2:nx, but if you index here at nx
 		# then you are indexing iu[i,j] @ (nx, _) and iu is only allocated
 		# for (nx-1, ny)
-		for i = 2:nx-1 
+		for i = 2:nx-1
 			for j = 1:ny
 				sum = p[ip[i,j]] - p[ip[i-1,j]]
 

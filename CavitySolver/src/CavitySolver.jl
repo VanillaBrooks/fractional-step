@@ -234,7 +234,7 @@ function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
 	lap(dims, bcs, iu, iv, q)
 	grad(dims, p, iu, iv, ip)
 
-	#div_(dims, bcs, q, iu, iv, ip)
+	div_(dims, bcs, q, iu, iv, ip)
 end
 
 const dims = create_dims(1.0, 1.0, 10,10)
