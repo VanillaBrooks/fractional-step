@@ -14,11 +14,14 @@ module CavitySolver
 	using .Main.laplacian: lap
 	using .Main.gradient: grad
 	using .Main.divergence: div_
-	using .Main.conjugate_gradient: conj_grad
+	using .Main.conjugate_gradient: conj_grad, FirstStepAx, calculate_ax, debug_conjugate_gradient
 
 	export create_dims, create_iu_iv, test, create_boundary_conditions, create_ip
 	export adv, lap, grad, div_, conj_grad, BoundaryConditions, Dims
 	export execute_solver, SolverResults
+
+	# temp
+	export debug_conjugate_gradient
 
 	function create_dims(length::Float64, height::Float64, nx::Int, ny::Int)::Dims 
 		np = nx * ny
@@ -134,6 +137,10 @@ module CavitySolver
 		# P^(n+1)
 		p_np1 = copy(p_n)
 
+		first_step_lhs_calculator = FirstStepAx(
+			dims, zero_bcs, iu, iv, dt, re
+		)
+
 		for step = 1:n_step
 			# step variables forward once
 			q_nm1 = q_n
@@ -169,25 +176,15 @@ module CavitySolver
 				-
 				(1/2) * adv_nm1
 
-			# equivalent to R * u_f
-			# because R = I - dt * nu * L / 2
-			# so we change to R = I - L / (2 re) 
-			# after multiplying by u_f then we have 
-			# R * u_f = u_f - L*u_f / (2 * re)
-			#
-			# the whole term is effectivly divided by dt
-			rq_lhs =
-				q_n / dt
-				-
-				(1 / (2 * re)) * lap_nobc_n
+			rq_lhs = calculate_ax(first_step_lhs_calculator, q_n)
 
 			# TODO: determine if the laplacian in R^-1 acts 
 			# with or without boundary conditions
 			# the other L (laplace) operators in R have no boundary conditions
 			# but the L (laplace) in S _does_ have boundary conditions
 			
-			# TODO: what is up with all the bc_L / bc_L^n+1  / bc_D terms in the revised
-			# set of fractional step equations?
+			println("calling into conjugate gradient")
+			conj_grad(first_step_lhs_calculator, rq_lhs, q_n, sq_rhs, 0.01)
 
 			break
 			
@@ -202,7 +199,7 @@ module CavitySolver
 		max_velo = maximum(bcs)
 
 		# advective CFL = U dt / dx
-		dt_advective = cfl_target * min(dims.nx, dims.ny) / max_velo
+		dt_advective = cfl_target * min(dims.dx, dims.dy) / max_velo
 
 		# diffusive CFL = dt / (Re * dx^2)
 		dt_diffusive = re * min(dims.nx, dims.ny)^2 * cfl_target
@@ -244,3 +241,5 @@ const dims = create_dims(1.0, 1.0, 10,10)
 bcs = create_boundary_conditions(dims)
 
 execute_solver(dims, bcs, 10., 1000.0)
+
+debug_conjugate_gradient()
