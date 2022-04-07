@@ -36,15 +36,15 @@ module CavitySolver
 		nx = dims.nx
 		ny = dims.ny
 
-		u_t = ones(nx-1, 1);
-		u_b = zeros(nx-1, 1);
-		u_r = zeros(ny, 1);
-		u_l = zeros(ny, 1);
+		u_t = ones(nx-1);
+		u_b = zeros(nx-1);
+		u_r = zeros(ny);
+		u_l = zeros(ny);
 
-		v_t = zeros(nx, 1);
-		v_b = zeros(nx, 1);
-		v_r = zeros(ny-1, 1);
-		v_l = zeros(ny-1, 1);
+		v_t = zeros(nx);
+		v_b = zeros(nx);
+		v_r = zeros(ny-1);
+		v_l = zeros(ny-1);
 
 		return BoundaryConditions( u_t, u_b, u_r, u_l, v_t, v_b, v_r, v_l)
 	end
@@ -127,13 +127,13 @@ module CavitySolver
 		##
 
 		# velocity matricies
-		q_star = zeros(dims.nu, 1)
+		q_star = zeros(dims.nu)
 		q_nm1 = copy(q_star)
 		q_n = copy(q_star)
 		q_np1 = copy(q_star)
 
 		# pressure matricies
-		p_n = zeros(dims.np, 1)
+		p_n = zeros(dims.np)
 		# P^(n+1)
 		p_np1 = copy(p_n)
 
@@ -219,27 +219,28 @@ function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
 	iu, iv = create_iu_iv(dims)
 	ip = create_ip(dims)
 
-	q = zeros(dims.nu, 1)
-	p = ones(dims.np, 1)
+	q = zeros(dims.nu)
+	p = ones(dims.np)
 
 	a, b = size(iu)
 	c, d = size(iv)
-	e, f = size(q)
+	e = size(q)
 	show(a*b + c*d)
 	@printf "\n"
-	show(e*f)
+	show(e)
 	@printf "\n"
 
-	lap(dims, bcs, iu, iv, q)
 	adv(dims, bcs, iu, iv, ip, q)
-	grad(dims, p, iu, iv, ip)
+	#lap(dims, bcs, iu, iv, q)
+	#grad(dims, p, iu, iv, ip)
 
-	div_(dims, bcs, q, iu, iv, ip)
+	#div_(dims, bcs, q, iu, iv, ip)
 end
 
 const dims = create_dims(1.0, 1.0, 10,10)
 bcs = create_boundary_conditions(dims)
 
-execute_solver(dims, bcs, 10., 1000.0)
+debug_solver(dims, bcs)
+#execute_solver(dims, bcs, 10., 1000.0)
 
-debug_conjugate_gradient()
+#debug_conjugate_gradient()
