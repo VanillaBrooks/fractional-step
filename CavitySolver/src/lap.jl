@@ -17,10 +17,10 @@ module laplacian
 		bcs::BoundaryConditions, 
 		iu::Matrix{Int64},
 		iv::Matrix{Int64},
-		q::Matrix{Float64}
-	)::Matrix{Float64}
+		q::Vector{Float64}
+	)::Vector{Float64}
 
-		Lq = zeros((dims.nu, 1))
+		Lq = zeros(dims.nu)
 
 		nx = dims.nx
 		ny = dims.ny
@@ -133,11 +133,11 @@ module laplacian
 
 	@inline function calc_lap(
 		dims::Dims,
-		Lq::Matrix{Float64},
+		Lq::Vector{Float64},
 		bcs::BoundaryConditions,
 		x_range::UnitRange{Int64},
 		y_range::UnitRange{Int64},
-		q::Matrix{Float64},
+		q::Vector{Float64},
 		points::Matrix{Int64},
 		indexer::Indexer,
 	)
@@ -159,47 +159,47 @@ module laplacian
 		end
 	end
 
-	reg_left(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	reg_left(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		q[indexer[i-1, j]]
-	reg_right(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	reg_right(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		q[indexer[i+1, j]]
-	reg_top(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	reg_top(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		q[indexer[i, j+1]]
-	reg_bot(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	reg_bot(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		q[indexer[i, j-1]]
-	reg_center(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	reg_center(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		q[indexer[i, j]]
 
 	#####
 	##### u velocity specific boundaries
 	#####
 
-	u_bottom_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	u_bottom_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		2 * bcs.u_b[i] - q[indexer[i,j]]
 
-	u_top_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	u_top_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		2 * bcs.u_t[i] - q[indexer[i,j]]
 
-	u_right_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	u_right_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.u_r[j]
 
-	u_left_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	u_left_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.u_l[j]
 
 	#####
 	##### v velocity specific boundaries
 	#####
 
-	v_right_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	v_right_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		2 * bcs.v_r[j] - q[indexer[i,j]]
 
-	v_left_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	v_left_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		2 * bcs.v_l[j] - q[indexer[i,j]]
 
-	v_bottom_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	v_bottom_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.v_b[i]
 
-	v_top_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	v_top_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.v_t[i]
 
 end

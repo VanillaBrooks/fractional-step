@@ -231,8 +231,8 @@ function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
 	@printf "\n"
 
 	adv(dims, bcs, iu, iv, ip, q)
-	#lap(dims, bcs, iu, iv, q)
-	#grad(dims, p, iu, iv, ip)
+	lap(dims, bcs, iu, iv, q)
+	grad(dims, p, iu, iv, ip)
 
 	#div_(dims, bcs, q, iu, iv, ip)
 end
