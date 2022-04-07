@@ -53,15 +53,15 @@ module CavitySolver
 		nx = dims.nx
 		ny = dims.ny
 
-		u_t = zeros(nx-1, 1);
-		u_b = zeros(nx-1, 1);
-		u_r = zeros(ny, 1);
-		u_l = zeros(ny, 1);
+		u_t = zeros(nx-1);
+		u_b = zeros(nx-1);
+		u_r = zeros(ny);
+		u_l = zeros(ny);
 
-		v_t = zeros(nx, 1);
-		v_b = zeros(nx, 1);
-		v_r = zeros(ny-1, 1);
-		v_l = zeros(ny-1, 1);
+		v_t = zeros(nx);
+		v_b = zeros(nx);
+		v_r = zeros(ny-1);
+		v_l = zeros(ny-1);
 
 		return BoundaryConditions( u_t, u_b, u_r, u_l, v_t, v_b, v_r, v_l)
 	end
@@ -240,7 +240,7 @@ end
 const dims = create_dims(1.0, 1.0, 10,10)
 bcs = create_boundary_conditions(dims)
 
-debug_solver(dims, bcs)
-#execute_solver(dims, bcs, 10., 1000.0)
+#debug_solver(dims, bcs)
+execute_solver(dims, bcs, 10., 1000.0)
 
 #debug_conjugate_gradient()

@@ -134,6 +134,8 @@ module conjugate_gradient
 			i += 1
 		end
 
+		println("conjugate gradient ran ", i, " steps")
+
 		return x
 	end
 end

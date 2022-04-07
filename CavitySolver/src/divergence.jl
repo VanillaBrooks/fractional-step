@@ -13,12 +13,12 @@ module divergence
 	function div_(
 		dims::Dims, 
 		bcs::BoundaryConditions, 
-		q::Matrix{Float64},
+		q::Vector{Float64},
 		iu::Matrix{Int64},
 		iv::Matrix{Int64},
 		ip::Matrix{Int64},
-	)::Matrix{Float64}
-		div = zeros(dims.np, 1)
+	)::Vector{Float64}
+		div = zeros(dims.np)
 
 		# indexing in this routine is based on the locations of the pressure
 		# since div is indexed exclusively on ip[ , ]
@@ -98,8 +98,8 @@ module divergence
 	@inline function calculate_divergence(
 		dims::Dims,
 		bcs::BoundaryConditions,
-		q::Matrix{Float64},
-		div::Matrix{Float64},
+		q::Vector{Float64},
+		div::Vector{Float64},
 		x_range::UnitRange{Int64},
 		y_range::UnitRange{Int64},
 		iu::Matrix{Int64},
@@ -128,31 +128,31 @@ module divergence
 	#### GENERAL INDEXERS - can be used wherever we are not hitting a boundary
 	####
 
-	reg_center(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	reg_center(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		q[indexer[i,j]]
-	reg_left(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	reg_left(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		q[indexer[i-1,j]]
-	reg_bottom(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	reg_bottom(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		q[indexer[i,j-1]]
 
 	####
 	#### Y Velocity boundary conditions for top / bottom
 	####
 
-	y_dir_bottom_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	y_dir_bottom_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.v_b[i]
 
-	y_dir_top_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	y_dir_top_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.v_t[i]
 
 	####
 	#### X Velocity boundary conditions for top / bottom
 	####
 	
-	x_dir_left_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	x_dir_left_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.u_l[j]
 
-	x_dir_right_bc(q::Matrix{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	x_dir_right_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.u_r[j]
 		
 end
