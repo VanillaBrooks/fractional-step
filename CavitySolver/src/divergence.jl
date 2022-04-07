@@ -13,10 +13,10 @@ module divergence
 	function div_(
 		dims::Dims, 
 		bcs::BoundaryConditions, 
-		q::Vector{Float64},
+		p::Vector{Float64},
 		iu::Matrix{Int64},
 		iv::Matrix{Int64},
-		ip::Matrix{Int64},
+		ip::Matrix{Int64}
 	)::Vector{Float64}
 		div = zeros(dims.np)
 
@@ -31,14 +31,14 @@ module divergence
 		###
 		
 		indexer = Indexer(reg_bottom, reg_center, reg_left, reg_center)
-		calculate_divergence(dims, bcs, q, div, 2:nx-1, 2:ny-1, iu, iv, ip, indexer)
+		calculate_divergence(dims, bcs, p, div, 2:nx-1, 2:ny-1, iu, iv, ip, indexer)
 
 		###
 		### Bottom Inner
 		###
 
 		indexer = Indexer(y_dir_bottom_bc, reg_center, reg_left, reg_center)
-		calculate_divergence(dims, bcs, q, div, 2:nx-1, 2:ny-1, iu, iv, ip, indexer)
+		calculate_divergence(dims, bcs, p, div, 2:nx-1, 2:ny-1, iu, iv, ip, indexer)
 
 		###
 		### Bottom Left (Pinned)
@@ -51,42 +51,42 @@ module divergence
 		###
 
 		indexer = Indexer(y_dir_bottom_bc, reg_center, reg_left, x_dir_right_bc)
-		calculate_divergence(dims, bcs, q, div, nx:nx, 1:1, iu, iv, ip, indexer)
+		calculate_divergence(dims, bcs, p, div, nx:nx, 1:1, iu, iv, ip, indexer)
 
 		###
 		### Left Inner
 		###
 		
 		indexer = Indexer(reg_bottom, reg_center, x_dir_left_bc, reg_center)
-		calculate_divergence(dims, bcs, q, div, 1:1, 2:ny-1, iu, iv, ip, indexer)
+		calculate_divergence(dims, bcs, p, div, 1:1, 2:ny-1, iu, iv, ip, indexer)
 
 		###
 		### Right Inner
 		###
 		
 		indexer = Indexer(reg_bottom, reg_center, reg_left, x_dir_right_bc)
-		calculate_divergence(dims, bcs, q, div, nx:nx, 2:ny-1, iu, iv, ip, indexer)
+		calculate_divergence(dims, bcs, p, div, nx:nx, 2:ny-1, iu, iv, ip, indexer)
 
 		###
 		### Top Inner
 		###
 		
 		indexer = Indexer(reg_bottom, y_dir_top_bc, reg_left, reg_center)
-		calculate_divergence(dims, bcs, q, div, 2:nx-1, ny:ny, iu, iv, ip, indexer)
+		calculate_divergence(dims, bcs, p, div, 2:nx-1, ny:ny, iu, iv, ip, indexer)
 
 		###
 		### Top Left
 		###
 		
 		indexer = Indexer(reg_bottom, y_dir_top_bc, x_dir_left_bc, reg_center)
-		calculate_divergence(dims, bcs, q, div, 1:1, ny:ny, iu, iv, ip, indexer)
+		calculate_divergence(dims, bcs, p, div, 1:1, ny:ny, iu, iv, ip, indexer)
 
 		###
 		### Top Right
 		###
 		
 		indexer = Indexer(reg_bottom, y_dir_top_bc, reg_left, x_dir_right_bc)
-		calculate_divergence(dims, bcs, q, div, nx:nx, ny:ny, iu, iv, ip, indexer)
+		calculate_divergence(dims, bcs, p, div, nx:nx, ny:ny, iu, iv, ip, indexer)
 
 		###
 		### RETURN
@@ -98,7 +98,7 @@ module divergence
 	@inline function calculate_divergence(
 		dims::Dims,
 		bcs::BoundaryConditions,
-		q::Vector{Float64},
+		p::Vector{Float64},
 		div::Vector{Float64},
 		x_range::UnitRange{Int64},
 		y_range::UnitRange{Int64},
@@ -109,11 +109,11 @@ module divergence
 	)
 		for i = x_range
 			for j = y_range 
-				center_x = indexer.center_x(q, bcs, iu, i, j)
-				center_y = indexer.center_y(q, bcs, iv, i, j)
+				center_x = indexer.center_x(p, bcs, iu, i, j)
+				center_y = indexer.center_y(p, bcs, iv, i, j)
 
-				left_x = indexer.left_x(q, bcs, iu, i,j)
-				bottom_y = indexer.bottom_y(q, bcs, iv, i,j)
+				left_x = indexer.left_x(p, bcs, iu, i,j)
+				bottom_y = indexer.bottom_y(p, bcs, iv, i,j)
 
 				# backward difference in each direction
 				diff_x = (center_x - left_x) / dims.dx
@@ -128,31 +128,31 @@ module divergence
 	#### GENERAL INDEXERS - can be used wherever we are not hitting a boundary
 	####
 
-	reg_center(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		q[indexer[i,j]]
-	reg_left(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		q[indexer[i-1,j]]
-	reg_bottom(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		q[indexer[i,j-1]]
+	reg_center(p::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+		p[indexer[i,j]]
+	reg_left(p::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+		p[indexer[i-1,j]]
+	reg_bottom(p::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+		p[indexer[i,j-1]]
 
 	####
 	#### Y Velocity boundary conditions for top / bottom
 	####
 
-	y_dir_bottom_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	y_dir_bottom_bc(p::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.v_b[i]
 
-	y_dir_top_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	y_dir_top_bc(p::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.v_t[i]
 
 	####
 	#### X Velocity boundary conditions for top / bottom
 	####
 	
-	x_dir_left_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	x_dir_left_bc(p::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.u_l[j]
 
-	x_dir_right_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
+	x_dir_right_bc(p::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
 		bcs.u_r[j]
 		
 end

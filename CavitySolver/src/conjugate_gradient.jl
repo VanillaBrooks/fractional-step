@@ -1,52 +1,11 @@
 module conjugate_gradient
 	using .Main.Structs: Dims, BoundaryConditions
 	using .Main.laplacian: lap
+	using .Main.lhs: calculate_ax, AxCalculator
 	using Printf
 
-	export conj_grad, calculate_ax, FirstStepAx, debug_conjugate_gradient
+	export conj_grad, debug_conjugate_gradient
 
-	abstract type AxCalculator end
-
-	#default impl
-	function calculate_ax(context::T, x::Vector{Float64})::Vector{Float64} where T <: AxCalculator
-		error("calculate_ax not implemented for this type")
-	end
-
-	struct FirstStepAx <: AxCalculator
-		dims::Dims
-		zero_bcs::BoundaryConditions
-		iu::Matrix{Int64}
-		iv::Matrix{Int64}
-		dt::Float64
-		re::Float64
-	end
-
-	# calculation of full LHS of the _first step_
-	function calculate_ax(ctx::FirstStepAx, x::Vector{Float64})::Vector{Float64}
-		# equivalent to R * u_f
-		# because R = I - dt * nu * L / 2
-		# so we change to R = I - L / (2 re) 
-		# after multiplying by u_f then we have 
-		# R * u_f = u_f - L*u_f / (2 * re)
-		#
-		# the whole term is effectivly divided by dt
-		lap_nobc_n = lap(ctx.dims, ctx.zero_bcs, ctx.iu, ctx.iv, x)
-		q = 
-			x / ctx.dt
-			-
-			(1 / (2 * ctx.re)) * lap_nobc_n
-		return q
-	end
-
-	struct ConstantMatrix <: AxCalculator
-		A::Matrix{Float64}
-	end
-
-	function calculate_ax(ctx::ConstantMatrix, x::Vector{Float64})::Vector{Float64}
-		ctx.A * x
-	end
-
-	#jfunction debug_conjugate_gradient(A::Matrix{Float64}, x::Matrix{Float64}, b::Matrix{Float64})
 	function debug_conjugate_gradient()::Vector{Float64}
 		A = Float64.([
 			5 -2 0;
@@ -110,9 +69,9 @@ module conjugate_gradient
 			q = calculate_ax(step_context, d)
 
 			# alpha
-			alpha = delta_new / (transpose(r) * q)[1,1]
+			alpha = delta_new / (transpose(r) * q)
 
-			x = x + (alpha * d) #TODO: This might need to be d instead of r
+			x = x + alpha * d
 
 			if i % 50 == 0 && i != 0
 				# calculate a new Ax 
@@ -134,7 +93,7 @@ module conjugate_gradient
 			i += 1
 		end
 
-		println("conjugate gradient ran ", i, " steps")
+		println("\nconjugate gradient ran ", i, " steps")
 
 		return x
 	end

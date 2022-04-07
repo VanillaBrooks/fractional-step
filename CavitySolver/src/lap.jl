@@ -91,6 +91,9 @@ module laplacian
 		indexer = Indexer(reg_left, v_right_bc, reg_top, reg_bot, reg_center)
 		calc_lap(dims, Lq, bcs, nx:nx, 2:ny-2, q, iv, indexer)
 
+		#println("\nlaplacian before top boundary conditions\n")
+		#display(transpose(Lq))
+
 		####
 		#### Top Inner
 		####
@@ -123,6 +126,9 @@ module laplacian
 		# v velocity points
 		indexer = Indexer(reg_left, v_right_bc, v_top_bc, reg_bot, reg_center)
 		calc_lap(dims, Lq, bcs, nx:nx, ny-1:ny-1, q, iv, indexer)
+
+		#println("\nlaplacian after top boundary conditions\n")
+		#display(transpose(Lq))
 
 		####
 		#### Return

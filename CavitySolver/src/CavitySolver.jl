@@ -3,6 +3,7 @@ include("adv.jl")
 include("lap.jl")
 include("gradient.jl")
 include("divergence.jl")
+include("lhs.jl")
 include("conjugate_gradient.jl")
 
 module CavitySolver
@@ -14,7 +15,8 @@ module CavitySolver
 	using .Main.laplacian: lap
 	using .Main.gradient: grad
 	using .Main.divergence: div_
-	using .Main.conjugate_gradient: conj_grad, FirstStepAx, calculate_ax, debug_conjugate_gradient
+	using .Main.conjugate_gradient: conj_grad, debug_conjugate_gradient
+	using .Main.lhs: FirstStepAx, SecondStepAx, calculate_ax
 
 	export create_dims, create_iu_iv, test, create_boundary_conditions, create_ip
 	export adv, lap, grad, div_, conj_grad, BoundaryConditions, Dims
@@ -116,6 +118,8 @@ module CavitySolver
 
 		cfl_target = 1.0
 
+		tol::Float64 = 0.001
+
 		dt = calculate_dt(dims, bcs, cfl_target, re)
 
 		n_step = floor(T / dt)
@@ -141,16 +145,31 @@ module CavitySolver
 			dims, zero_bcs, iu, iv, dt, re
 		)
 
+		second_step_lhs_calculator = SecondStepAx(
+			dims, zero_bcs, bcs, iu, iv, ip, dt, re
+		)
+
 		for step = 1:n_step
 			# step variables forward once
 			q_nm1 = q_n
 			q_n = q_np1
 			p_n = p_np1
 
+
+			#seconds= FirstStepAx(
+			#	dims, zero_bcs, iu, iv, dt, re
+			#)
+
 			#
 			# run calculations
 			# 
+
+			#println("\n\n:::::\ncalculating laplacian with boundary conditions\n\n")
 			lap_bc_n = lap(dims, bcs, iu, iv, q_n)
+			#println("\nfinished laplacian")
+			println("\nlap bc n is ")
+			display(transpose(lap_bc_n))
+
 			adv_n = adv(dims, bcs, iu, iv, ip, q_n)
 			# TODO: cache this result from the last run - it should be the same
 			adv_nm1 = adv(dims, bcs, iu, iv, ip, q_nm1)
@@ -159,12 +178,28 @@ module CavitySolver
 			#
 			# assemble things
 			#
+			
+			println("\n(3/2) * adv_n is")
+			display(transpose(adv_n))
+
+			println("\nadv_nm1 is")
+			display(transpose(adv_nm1))
+
+			println("\nq_n is")
+			display(transpose(q_n))
+
+			println("\n 1/2re * lap_bc_n is")
+			display(transpose(1 / (2 * re) * lap_bc_n))
+
+			#
+			# First step
+			#
 
 			# here S =  I + dt nu / 2 L
 			# which becomes S = (I + dt L / (2 Re))
 			#
 			# the whole term is divided by dt
-			sq_rhs = 
+			sq_rhs = (
 				# start of S * u_n term
 				q_n / dt
 				+
@@ -175,16 +210,43 @@ module CavitySolver
 				(3/2) * adv_n
 				-
 				(1/2) * adv_nm1
+			)
+
+			println("\n RHS vector at the first step is:")
+			display(transpose(sq_rhs))
 
 			rq_lhs = calculate_ax(first_step_lhs_calculator, q_n)
 
-			# TODO: determine if the laplacian in R^-1 acts 
-			# with or without boundary conditions
-			# the other L (laplace) operators in R have no boundary conditions
-			# but the L (laplace) in S _does_ have boundary conditions
-			
 			println("calling into conjugate gradient")
-			conj_grad(first_step_lhs_calculator, rq_lhs, q_n, sq_rhs, 0.01)
+			uf = conj_grad(first_step_lhs_calculator, rq_lhs, q_n, sq_rhs, tol)
+
+			println("\noutput u_f from conjugate_gradient is")
+			display(transpose(uf))
+
+			println("\n full LHS for first step is then")
+			display(transpose(calculate_ax(first_step_lhs_calculator, uf)))
+			
+			#
+			# Second step
+			#
+			second_step_rhs = (
+				div_(dims, bcs, uf, iu, iv, ip) / dt
+			)
+
+			lhs_estimate = calculate_ax(second_step_lhs_calculator, p_n)
+
+			p_np1 = conj_grad(second_step_lhs_calculator, lhs_estimate, p_n, second_step_rhs, tol)
+
+			println("\n p_np1 estimate is")
+			display(transpose(p_np1))
+
+			println("\nsecond step full LHS is")
+			lhs_final = calculate_ax(second_step_lhs_calculator, p_np1)
+			display(transpose(lhs_final))
+			
+			println("\nrhs second step is")
+			display(transpose(second_step_rhs))
+
 
 			break
 			
@@ -237,7 +299,7 @@ function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
 	div_(dims, bcs, q, iu, iv, ip)
 end
 
-const dims = create_dims(1.0, 1.0, 10,10)
+const dims = create_dims(1.0, 1.0, 5,5)
 bcs = create_boundary_conditions(dims)
 
 #debug_solver(dims, bcs)
