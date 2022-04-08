@@ -17,26 +17,27 @@ module gradient
 		nx = dims.nx
 		ny = dims.ny
 
-		# dp / dx
+		## dp / dx
 
 		# TODO: in lecture this was 2:nx, but if you index here at nx
 		# then you are indexing iu[i,j] @ (nx, _) and iu is only allocated
 		# for (nx-1, ny)
-		for i = 2:nx-1
+		for i = 2:nx
 			for j = 1:ny
 				sum = p[ip[i,j]] - p[ip[i-1,j]]
 
-				grad[iu[i,j]] = sum / dims.dx
+				grad[iu[i-1,j]] = sum / dims.dx
 			end
 		end
 
 		# dp / dy
-
+	
 		# TODO: same issue here on the y indexing
 		for i = 1:nx
-			for j = 2:ny-1
+			for j = 2:ny
 				sum = p[ip[i,j]] - p[ip[i,j-1]]
-				grad[iv[i,j]] = sum / dims.dy
+
+				grad[iv[i,j-1]] = sum / dims.dy
 			end
 		end
 

@@ -38,7 +38,7 @@ module divergence
 		###
 
 		indexer = Indexer(y_dir_bottom_bc, reg_center, reg_left, reg_center)
-		calculate_divergence(dims, bcs, p, div, 2:nx-1, 2:ny-1, iu, iv, ip, indexer)
+		calculate_divergence(dims, bcs, p, div, 2:nx-1, 1:1, iu, iv, ip, indexer)
 
 		###
 		### Bottom Left (Pinned)

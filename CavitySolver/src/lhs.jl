@@ -45,7 +45,6 @@ module lhs
 	struct SecondStepAx <: AxCalculator
 		dims::Dims
 		zero_bcs::BoundaryConditions
-		bcs::BoundaryConditions
 		iu::Matrix{Int64}
 		iv::Matrix{Int64}
 		ip::Matrix{Int64}
@@ -54,14 +53,11 @@ module lhs
 	end
 
 	function calculate_ax(ctx::SecondStepAx, p::Vector{Float64})::Vector{Float64}
+		# take the gradient of the pressure
 		G = grad(ctx.dims, p, ctx.iu, ctx.iv, ctx.ip)
 
-		laplace_G = lap(ctx.dims, ctx.bcs, ctx.iu, ctx.iv, G)
-
-		r_inv = G + (ctx.dt / (2 * ctx.re)) * laplace_G
-
 		# then take the divergence of R^-1
-		div = div_(ctx.dims, ctx.bcs, r_inv, ctx.iu, ctx.iv, ctx.ip)
+		div = div_(ctx.dims, ctx.zero_bcs, G, ctx.iu, ctx.iv, ctx.ip)
 
 		return div
 	end

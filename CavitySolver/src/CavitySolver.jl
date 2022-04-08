@@ -20,7 +20,7 @@ module CavitySolver
 
 	export create_dims, create_iu_iv, test, create_boundary_conditions, create_ip
 	export adv, lap, grad, div_, conj_grad, BoundaryConditions, Dims
-	export execute_solver, SolverResults
+	export execute_solver, SolverResults, gradient_test
 
 	# temp
 	export debug_conjugate_gradient
@@ -146,7 +146,7 @@ module CavitySolver
 		)
 
 		second_step_lhs_calculator = SecondStepAx(
-			dims, zero_bcs, bcs, iu, iv, ip, dt, re
+			dims, zero_bcs, iu, iv, ip, dt, re
 		)
 
 		for step = 1:n_step
@@ -154,11 +154,6 @@ module CavitySolver
 			q_nm1 = q_n
 			q_n = q_np1
 			p_n = p_np1
-
-
-			#seconds= FirstStepAx(
-			#	dims, zero_bcs, iu, iv, dt, re
-			#)
 
 			#
 			# run calculations
@@ -240,13 +235,12 @@ module CavitySolver
 			println("\n p_np1 estimate is")
 			display(transpose(p_np1))
 
-			println("\nsecond step full LHS is")
 			lhs_final = calculate_ax(second_step_lhs_calculator, p_np1)
-			display(transpose(lhs_final))
-			
-			println("\nrhs second step is")
-			display(transpose(second_step_rhs))
 
+			println("\n\n\nLHS final --- RHS actual")
+			for i in 1:dims.np
+				println(lhs_final[i], "   ", second_step_rhs[i])
+			end
 
 			break
 			
@@ -269,6 +263,32 @@ module CavitySolver
 		dt = min(dt_diffusive, dt_advective)
 
 		return dt
+	end
+
+	function gradient_test(dims::Dims)
+		pressure = zeros(dims.nx * dims.ny)
+		expected = zeros(dims.nu)
+
+		iu, iv = create_iu_iv(dims)
+		ip = create_ip(dims)
+
+		for i = 1:dims.nx
+			for j = 1:dims.ny
+				pressure[ip[i,j]] = sin(i) + cos(j)
+			end
+		end
+
+		no_bcs = zero_boundary_conditions(dims)
+
+		out = grad(dims, pressure, iu, iv, ip)
+
+		println("gradient is ")
+		display(transpose(out))
+
+		println("expected is ")
+		display(transpose(expected))
+
+
 	end
 
 end
@@ -299,10 +319,14 @@ function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
 	div_(dims, bcs, q, iu, iv, ip)
 end
 
-const dims = create_dims(1.0, 1.0, 5,5)
+n = 5
+
+const dims = create_dims(1.0, 1.0, n,n)
 bcs = create_boundary_conditions(dims)
 
 #debug_solver(dims, bcs)
 execute_solver(dims, bcs, 10., 1000.0)
+
+#gradient_test(dims)
 
 #debug_conjugate_gradient()
