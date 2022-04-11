@@ -18,10 +18,12 @@ module laplacian
 		bcs::BoundaryConditions, 
 		iu::IU,
 		iv::IV,
-		q::Vector{Float64}
+		q::Vector{Float64},
+		# dims.nu points long
+		Lq::Vector{Float64}
 	)::Vector{Float64} where IV <: Indexable where IU <: Indexable 
 
-		Lq = zeros(dims.nu)
+		#Lq = zeros(dims.nu)
 
 		nx = dims.nx
 		ny = dims.ny

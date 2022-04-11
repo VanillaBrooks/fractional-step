@@ -18,8 +18,10 @@ module divergence
 		iu::IU,
 		iv::IV,
 		ip::IP,
+		# np length vector
+		div::Vector{Float64}
 	)::Vector{Float64} where IU <: Indexable where IV <: Indexable where IP <: Indexable
-		div = zeros(dims.np)
+		#div = zeros(dims.np)
 
 		# indexing in this routine is based on the locations of the pressure
 		# since div is indexed exclusively on ip[ , ]

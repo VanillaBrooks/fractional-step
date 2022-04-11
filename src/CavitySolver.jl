@@ -91,25 +91,51 @@ module CavitySolver
 		##
 
 		# velocity matricies
-		q_star = zeros(dims.nu)
-		q_nm1 = copy(q_star)
-		q_n = copy(q_star)
-		q_np1 = copy(q_star)
+		uf = zeros(dims.nu)
+		q_nm1 = copy(uf)
+		q_n = copy(uf)
+		q_np1 = copy(uf)
 
 		# pressure matricies
 		p_n = zeros(dims.np)
 		# P^(n+1)
 		p_np1 = copy(p_n)
 
+		# advection matricies
 		adv_n = zeros(Float64, dims.nu)
 		adv_nm1 = zeros(Float64, dims.nu)
 
+		#
+		# laplace
+		#
+
+		# used in the main routine
+		laplace_bc_n = zeros(Float64, dims.nu)
+		# used in the LHS calculation
+		laplace_nobc_n = zeros(Float64, dims.nu)
+
+		#
+		# divergence buffers
+		#
+
+		div_loop = zeros(dims.np)
+		div_lhs = zeros(dims.np)
+
+		#
+		# right hand sides
+		#
+		#sq_rhs = zeros(dims.nu)
+
+		#
+		# Steppers for LHS
+		#
+
 		first_step_lhs_calculator = FirstStepAx(
-			dims, zero_bcs, iu, iv, dt, re
+			dims, zero_bcs, iu, iv, dt, re, laplace_nobc_n
 		)
 
 		second_step_lhs_calculator = SecondStepAx(
-			dims, zero_bcs, iu, iv, ip, dt, re
+			dims, zero_bcs, iu, iv, ip, dt, re, div_lhs
 		)
 
 		println("executing ", n_step, " steps for a solver time of ", T)
@@ -122,64 +148,49 @@ module CavitySolver
 			adv_nm1 = adv_n
 
 			#
-			# run calculations
-			# 
-
-			#println("\n\n:::::\ncalculating laplacian with boundary conditions\n\n")
-			lap_bc_n = lap(dims, bcs, iu, iv, q_n)
-			#println("\nfinished laplacian")
-			#println("\nlap bc n is ")
-			#display(transpose(lap_bc_n))
-
-			adv_n = adv(dims, bcs, iu, iv, ip, q_n, adv_n)
-
-			#
 			# First step
 			#
+
+			#laplace_bc_n= 
+			lap(dims, bcs, iu, iv, q_n, laplace_bc_n)
+
+			#adv_n = 
+			adv(dims, bcs, iu, iv, ip, q_n, adv_n)
 
 			# here S =  I + dt nu / 2 L
 			# which becomes S = (I + dt L / (2 Re))
 			#
 			# the whole term is divided by dt
+			#@time 
 			sq_rhs = (
 				# start of S * u_n term
 				q_n / dt
 				+
-				(1 / (2 * re)) * lap_bc_n
+				(1 / (2 .* re)) .* laplace_bc_n
 				# end of S * u_n term
 				# start of advection term
 				+
-				(3/2) * adv_n
+				(3/2) .* adv_n
 				-
-				(1/2) * adv_nm1
+				(1/2) .* adv_nm1
 			)
 
 			rq_lhs = calculate_ax(first_step_lhs_calculator, q_n)
 
 			#println("calling into conjugate gradient")
-			uf = conj_grad(first_step_lhs_calculator, rq_lhs, q_n, sq_rhs, tol)
+			uf[:] = conj_grad(first_step_lhs_calculator, rq_lhs, q_n, sq_rhs, tol)
 
-			#println("\noutput u_f from conjugate_gradient is")
-			#display(transpose(uf))
-
-			#println("\n full LHS for first step is then")
-			#display(transpose(calculate_ax(first_step_lhs_calculator, uf)))
-			
 			#
 			# Second step
 			#
 			
-			second_step_rhs = (
-				div_(dims, bcs, uf, iu, iv, ip) / dt
-			)
+			div_loop = div_(dims, bcs, uf, iu, iv, ip, div_loop)
+
+			second_step_rhs = div_loop ./ dt
 
 			lhs_estimate = calculate_ax(second_step_lhs_calculator, p_n)
 
 			p_np1 = conj_grad(second_step_lhs_calculator, lhs_estimate, p_n, second_step_rhs, tol)
-
-			#println("\n p_np1 estimate is")
-			#display(transpose(p_np1))
-
 			lhs_final = calculate_ax(second_step_lhs_calculator, p_np1)
 
 			if step == n_step 
@@ -199,6 +210,7 @@ module CavitySolver
 			if step == n_step 
 				println("\n\nfinal velocity")
 				display(q_np1)
+				println("")
 			end
 
 			#break
@@ -285,12 +297,14 @@ bcs = create_boundary_conditions(dims)
 
 #debug_solver(dims, bcs)
 Re = 100.0
+#time_end = 0.01
 time_end = 0.01
 # Re = 100
 # T = 1
 # steps = 128
 # runtime = 355 seconds
-@time execute_solver(dims, bcs, time_end, Re)
+#@time 
+execute_solver(dims, bcs, time_end, Re)
 
 #gradient_test(dims)
 

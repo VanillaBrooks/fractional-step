@@ -35,9 +35,10 @@ module advection
 		iv::IV,
 		ip::IP,
 		q::Vector{Float64},
+		# dims.nu long
 		nq::Vector{Float64}
 	)::Vector{Float64} where IU <: Indexable where IV <: Indexable where IP <: Indexable
-		nq = zeros(dims.nu)
+		#nq = zeros(dims.nu)
 		nx = dims.nx
 		ny = dims.ny
 

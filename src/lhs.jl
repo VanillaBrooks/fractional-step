@@ -23,6 +23,7 @@ module lhs
 		iv::IV
 		dt::Float64
 		re::Float64
+		lap_nobc_n::Vector{Float64}
 	end
 
 	# calculation of full LHS of the _first step_
@@ -34,11 +35,12 @@ module lhs
 		# R * u_f = u_f - L*u_f / (2 * re)
 		#
 		# the whole term is effectivly divided by dt
-		lap_nobc_n = lap(ctx.dims, ctx.zero_bcs, ctx.iu, ctx.iv, x)
+		#ctx.lap_nobc_n = 
+		lap(ctx.dims, ctx.zero_bcs, ctx.iu, ctx.iv, x, ctx.lap_nobc_n)
 		q = (
 			x / ctx.dt
 			-
-			(1 / (2 * ctx.re)) * lap_nobc_n
+			(1 / (2 * ctx.re)) * ctx.lap_nobc_n
 		)
 		return q
 	end
@@ -51,6 +53,7 @@ module lhs
 		ip::IP
 		dt::Float64
 		re::Float64
+		div_buffer::Vector{Float64}
 	end
 
 	function calculate_ax(ctx::SecondStepAx, p::Vector{Float64})::Vector{Float64}
@@ -58,9 +61,10 @@ module lhs
 		G = grad(ctx.dims, p, ctx.iu, ctx.iv, ctx.ip)
 
 		# then take the divergence of R^-1
-		div = div_(ctx.dims, ctx.zero_bcs, G, ctx.iu, ctx.iv, ctx.ip)
+		#ctx.div_buffer = 
+		div_(ctx.dims, ctx.zero_bcs, G, ctx.iu, ctx.iv, ctx.ip, ctx.div_buffer)
 
-		return div
+		return ctx.div_buffer
 	end
 
 	struct ConstantMatrix <: AxCalculator

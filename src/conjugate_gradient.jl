@@ -71,7 +71,7 @@ module conjugate_gradient
 			# alpha
 			alpha = delta_new / (transpose(r) * q)
 
-			x = x + alpha * d
+			x = x .+ alpha .* d
 
 			if i % 50 == 0 && i != 0
 				# calculate a new Ax 
@@ -88,7 +88,7 @@ module conjugate_gradient
 
 			beta = delta_new / delta_old
 
-			d = r + beta * d
+			d[:] = r .+ beta .* d
 
 			i += 1
 		end
