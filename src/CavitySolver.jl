@@ -28,6 +28,13 @@ module CavitySolver
 	# temp
 	export debug_conjugate_gradient
 
+	function print_vector(vec::Vector{<:AbstractFloat}, name::String)
+		println("for ", name, ":")
+		for i = 1:length(vec)
+			println(i, " ", vec[i])
+		end
+	end
+
 	function create_boundary_conditions(dims::Dims)::BoundaryConditions
 		nx = dims.nx
 		ny = dims.ny
@@ -78,11 +85,13 @@ module CavitySolver
 
 		cfl_target = 1.0
 
-		tol::Float64 = 0.001
+		tol::Float64 = 1E-6
 
 		dt = calculate_dt(dims, bcs, cfl_target, re)
+		dt = 0.0391
 
 		n_step = Int64(floor(T / dt))
+		n_step = 1
 
 		zero_bcs = zero_boundary_conditions(dims)
 
@@ -139,7 +148,7 @@ module CavitySolver
 			dims, zero_bcs, iu, iv, ip, dt, re, div_lhs, grad_buffer_lhs
 		)
 
-		println("executing ", n_step, " steps for a solver time of ", T)
+		println("executing ", n_step, " steps for a solver time of ", T, " with a dt = ", dt)
 
 		for step = 1:n_step
 			# step variables forward once
@@ -148,11 +157,15 @@ module CavitySolver
 			p_n = p_np1
 			adv_nm1 = adv_n
 
+			println("executing step")
+
 			#
 			# First step
 			#
 
 			lap!(dims, bcs, iu, iv, q_n, laplace_bc_n)
+
+			print_vector(laplace_bc_n, "laplace bc")
 
 			adv!(dims, bcs, iu, iv, ip, q_n, adv_n)
 
@@ -176,6 +189,8 @@ module CavitySolver
 			rq_lhs = calculate_ax(first_step_lhs_calculator, q_n)
 
 			uf[:] = conj_grad(first_step_lhs_calculator, rq_lhs, q_n, sq_rhs, tol)
+
+			print_vector(uf, "q_star / uf")
 
 			#
 			# Second step
@@ -286,13 +301,13 @@ function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
 	div_(dims, bcs, q, iu, iv, ip)
 end
 
-n = 128
+n = 16
 
 const dims = create_dims(1.0, 1.0, n,n)
 bcs = create_boundary_conditions(dims)
 
 #debug_solver(dims, bcs)
-Re = 100.0
+Re = 10.0
 #time_end = 0.01
 time_end = 0.1
 # Re = 100
@@ -300,7 +315,7 @@ time_end = 0.1
 # steps = 128
 # runtime = 355 seconds
 #@time 
-@time execute_solver(dims, bcs, time_end, Re)
+execute_solver(dims, bcs, time_end, Re)
 
 #gradient_test(dims)
 
