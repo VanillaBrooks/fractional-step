@@ -93,7 +93,7 @@ module conjugate_gradient
 			i += 1
 		end
 
-		println("\nconjugate gradient ran ", i, " steps")
+		#println("\nconjugate gradient ran ", i, " steps")
 
 		return x
 	end

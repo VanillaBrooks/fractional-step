@@ -1,5 +1,6 @@
 module gradient
 	using .Main.Structs: Dims, BoundaryConditions
+	using .Main.indexing: Indexable
 	using Printf
 
 	export grad
@@ -7,10 +8,10 @@ module gradient
 	function grad(
 		dims::Dims, 
 		p::Vector{Float64}, 
-		iu::Matrix{Int64},
-		iv::Matrix{Int64},
-		ip::Matrix{Int64}
-		)::Vector{Float64}
+		iu::IU,
+		iv::IV,
+		ip::IP,
+		)::Vector{Float64} where IU <: Indexable where IV <: Indexable where IP <: Indexable
 
 		grad = zeros(dims.nu)
 

@@ -3,6 +3,7 @@ module lhs
 	using .Main.laplacian: lap
 	using .Main.gradient: grad
 	using .Main.divergence: div_
+	using .Main.indexing: Indexable
 
 	export AxCalculator, calculate_ax, FirstStepAx, SecondStepAx, ConstantMatrix
 
@@ -15,11 +16,11 @@ module lhs
 		error("calculate_ax not implemented for this type")
 	end
 
-	struct FirstStepAx <: AxCalculator
+	struct FirstStepAx{IU, IV} <: AxCalculator
 		dims::Dims
 		zero_bcs::BoundaryConditions
-		iu::Matrix{Int64}
-		iv::Matrix{Int64}
+		iu::IU
+		iv::IV
 		dt::Float64
 		re::Float64
 	end
@@ -42,12 +43,12 @@ module lhs
 		return q
 	end
 
-	struct SecondStepAx <: AxCalculator
+	struct SecondStepAx{IU, IV, IP} <: AxCalculator
 		dims::Dims
 		zero_bcs::BoundaryConditions
-		iu::Matrix{Int64}
-		iv::Matrix{Int64}
-		ip::Matrix{Int64}
+		iu::IU
+		iv::IV
+		ip::IP
 		dt::Float64
 		re::Float64
 	end

@@ -1,6 +1,7 @@
 module Structs
 	export BoundaryConditions
 	export Dims
+	export create_dims
 
 	struct BoundaryConditions
 		u_t::Vector{Float64}
@@ -34,4 +35,14 @@ module Structs
 		dx::Float64
 		dy::Float64
 	end
+
+	function create_dims(length::Float64, height::Float64, nx::Int, ny::Int)::Dims 
+		np = nx * ny
+		nu = (nx - 1) * ny + (ny - 1) * nx
+
+		dx = length / nx
+		dy = height / ny
+		return Dims(nx, ny, np, nu, dx, dy)
+	end
+
 end

@@ -1,4 +1,5 @@
 include("structs.jl")
+include("indexing.jl")
 include("adv.jl")
 include("lap.jl")
 include("gradient.jl")
@@ -11,12 +12,14 @@ module CavitySolver
 
 	using .Main.Structs:BoundaryConditions
 	using .Main.Structs:Dims
+	using .Main.Structs: create_dims
 	using .Main.advection: adv
 	using .Main.laplacian: lap
 	using .Main.gradient: grad
 	using .Main.divergence: div_
 	using .Main.conjugate_gradient: conj_grad, debug_conjugate_gradient
 	using .Main.lhs: FirstStepAx, SecondStepAx, calculate_ax
+	using .Main.indexing: create_ip, create_iu_iv
 
 	export create_dims, create_iu_iv, test, create_boundary_conditions, create_ip
 	export adv, lap, grad, div_, conj_grad, BoundaryConditions, Dims
@@ -24,15 +27,6 @@ module CavitySolver
 
 	# temp
 	export debug_conjugate_gradient
-
-	function create_dims(length::Float64, height::Float64, nx::Int, ny::Int)::Dims 
-		np = nx * ny
-		nu = (nx - 1) * ny + (ny - 1) * nx
-
-		dx = length / nx
-		dy = height / ny
-		return Dims(nx, ny, np, nu, dx, dy)
-	end
 
 	function create_boundary_conditions(dims::Dims)::BoundaryConditions
 		nx = dims.nx
@@ -68,43 +62,6 @@ module CavitySolver
 		return BoundaryConditions( u_t, u_b, u_r, u_l, v_t, v_b, v_r, v_l)
 	end
 
-	function create_iu_iv(dims::Dims)::Tuple{Matrix{Int}, Matrix{Int}}
-		iu = zeros(dims.nx-1, dims.ny)
-		iv = zeros(dims.nx, dims.ny-1)
-
-		k = 1
-		# init iu values
-		for i = 1:dims.nx -1
-			for j = 1:dims.ny
-				iu[i,j] = k
-				k += 1
-			end
-		end
-
-		# init iv values
-		for i = 1:dims.nx
-			for j = 1:dims.ny -1
-				iv[i,j] = k
-				k += 1
-			end
-		end
-
-		return iu,iv
-	end
-
-	function create_ip(dims::Dims)::Matrix{Int} 
-		ip = zeros(dims.nx, dims.ny)
-
-		k = 1
-		for i = 1:dims.nx
-			for j = 1:dims.ny
-				ip[i,j] = k
-				k += 1
-			end
-		end
-		
-		return ip
-	end
 
 
 	struct SolverResults
@@ -113,8 +70,11 @@ module CavitySolver
 
 	function execute_solver(dims::Dims, bcs::BoundaryConditions, T::Float64, re::Float64)::SolverResults
 
-		iu, iv = create_iu_iv(dims)
-		ip = create_ip(dims)
+		#iu, iv = create_iu_iv(dims)
+		#ip = create_ip(dims)
+		iu = Main.indexing.Iu(dims)
+		iv = Main.indexing.Iv(dims)
+		ip = Main.indexing.Ip(dims)
 
 		cfl_target = 1.0
 
@@ -122,7 +82,7 @@ module CavitySolver
 
 		dt = calculate_dt(dims, bcs, cfl_target, re)
 
-		n_step = floor(T / dt)
+		n_step = Int64(floor(T / dt))
 
 		zero_bcs = zero_boundary_conditions(dims)
 
@@ -141,6 +101,9 @@ module CavitySolver
 		# P^(n+1)
 		p_np1 = copy(p_n)
 
+		adv_n = zeros(Float64, dims.nu)
+		adv_nm1 = zeros(Float64, dims.nu)
+
 		first_step_lhs_calculator = FirstStepAx(
 			dims, zero_bcs, iu, iv, dt, re
 		)
@@ -149,11 +112,14 @@ module CavitySolver
 			dims, zero_bcs, iu, iv, ip, dt, re
 		)
 
+		println("executing ", n_step, " steps for a solver time of ", T)
+
 		for step = 1:n_step
 			# step variables forward once
 			q_nm1 = q_n
 			q_n = q_np1
 			p_n = p_np1
+			adv_nm1 = adv_n
 
 			#
 			# run calculations
@@ -162,29 +128,27 @@ module CavitySolver
 			#println("\n\n:::::\ncalculating laplacian with boundary conditions\n\n")
 			lap_bc_n = lap(dims, bcs, iu, iv, q_n)
 			#println("\nfinished laplacian")
-			println("\nlap bc n is ")
-			display(transpose(lap_bc_n))
+			#println("\nlap bc n is ")
+			#display(transpose(lap_bc_n))
 
-			adv_n = adv(dims, bcs, iu, iv, ip, q_n)
-			# TODO: cache this result from the last run - it should be the same
-			adv_nm1 = adv(dims, bcs, iu, iv, ip, q_nm1)
+			adv_n = adv(dims, bcs, iu, iv, ip, q_n, adv_n)
 			lap_nobc_n = lap(dims, zero_bcs, iu, iv, q_n)
 
 			#
 			# assemble things
 			#
 			
-			println("\n(3/2) * adv_n is")
-			display(transpose(adv_n))
+			#println("\n(3/2) * adv_n is")
+			#display(transpose(adv_n))
 
-			println("\nadv_nm1 is")
-			display(transpose(adv_nm1))
+			#println("\nadv_nm1 is")
+			#display(transpose(adv_nm1))
 
-			println("\nq_n is")
-			display(transpose(q_n))
+			#println("\nq_n is")
+			#display(transpose(q_n))
 
-			println("\n 1/2re * lap_bc_n is")
-			display(transpose(1 / (2 * re) * lap_bc_n))
+			#println("\n 1/2re * lap_bc_n is")
+			#display(transpose(1 / (2 * re) * lap_bc_n))
 
 			#
 			# First step
@@ -207,23 +171,24 @@ module CavitySolver
 				(1/2) * adv_nm1
 			)
 
-			println("\n RHS vector at the first step is:")
-			display(transpose(sq_rhs))
+			#println("\n RHS vector at the first step is:")
+			#display(transpose(sq_rhs))
 
 			rq_lhs = calculate_ax(first_step_lhs_calculator, q_n)
 
-			println("calling into conjugate gradient")
+			#println("calling into conjugate gradient")
 			uf = conj_grad(first_step_lhs_calculator, rq_lhs, q_n, sq_rhs, tol)
 
-			println("\noutput u_f from conjugate_gradient is")
-			display(transpose(uf))
+			#println("\noutput u_f from conjugate_gradient is")
+			#display(transpose(uf))
 
-			println("\n full LHS for first step is then")
-			display(transpose(calculate_ax(first_step_lhs_calculator, uf)))
+			#println("\n full LHS for first step is then")
+			#display(transpose(calculate_ax(first_step_lhs_calculator, uf)))
 			
 			#
 			# Second step
 			#
+			
 			second_step_rhs = (
 				div_(dims, bcs, uf, iu, iv, ip) / dt
 			)
@@ -232,17 +197,31 @@ module CavitySolver
 
 			p_np1 = conj_grad(second_step_lhs_calculator, lhs_estimate, p_n, second_step_rhs, tol)
 
-			println("\n p_np1 estimate is")
-			display(transpose(p_np1))
+			#println("\n p_np1 estimate is")
+			#display(transpose(p_np1))
 
 			lhs_final = calculate_ax(second_step_lhs_calculator, p_np1)
 
-			println("\n\n\nLHS final --- RHS actual")
-			for i in 1:dims.np
-				println(lhs_final[i], "   ", second_step_rhs[i])
+			if step == n_step 
+				println("\n\n\nLHS final --- RHS actual")
+				for i in 1:dims.np
+					println(lhs_final[i], "   ", second_step_rhs[i])
+				end
 			end
 
-			break
+			#
+			# Third fracitonal step
+			#
+
+			# u^{n+1} calculation - this is the third step
+			q_np1 = uf - (dt * grad(dims, p_np1, iu, iv, ip))
+
+			if step == n_step 
+				println("\n\nfinal velocity")
+				display(q_np1)
+			end
+
+			#break
 			
 		end
 
@@ -319,14 +298,23 @@ function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
 	div_(dims, bcs, q, iu, iv, ip)
 end
 
-n = 5
+n = 128
 
 const dims = create_dims(1.0, 1.0, n,n)
 bcs = create_boundary_conditions(dims)
 
 #debug_solver(dims, bcs)
-execute_solver(dims, bcs, 10., 1000.0)
+Re = 100.0
+time_end = 0.01
+# Re = 100
+# T = 1
+# steps = 128
+# runtime = 355 seconds
+@time execute_solver(dims, bcs, time_end, Re)
 
 #gradient_test(dims)
 
 #debug_conjugate_gradient()
+
+#using .indexing
+#check_indexing()

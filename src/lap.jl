@@ -1,6 +1,7 @@
 module laplacian
 	using Printf
 	using .Main.Structs: BoundaryConditions, Dims
+	using .Main.indexing: Indexable
 
 	export lap
 
@@ -15,10 +16,10 @@ module laplacian
 	function lap(
 		dims::Dims, 
 		bcs::BoundaryConditions, 
-		iu::Matrix{Int64},
-		iv::Matrix{Int64},
+		iu::IU,
+		iv::IV,
 		q::Vector{Float64}
-	)::Vector{Float64}
+	)::Vector{Float64} where IV <: Indexable where IU <: Indexable 
 
 		Lq = zeros(dims.nu)
 
@@ -144,9 +145,9 @@ module laplacian
 		x_range::UnitRange{Int64},
 		y_range::UnitRange{Int64},
 		q::Vector{Float64},
-		points::Matrix{Int64},
+		points::T,
 		indexer::Indexer,
-	)
+	) where T <: Indexable
 		for i = x_range
 			for j = y_range
 				left = indexer.left(q, bcs, points, i, j)
@@ -165,47 +166,63 @@ module laplacian
 		end
 	end
 
-	reg_left(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		q[indexer[i-1, j]]
-	reg_right(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		q[indexer[i+1, j]]
-	reg_top(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		q[indexer[i, j+1]]
-	reg_bot(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		q[indexer[i, j-1]]
-	reg_center(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		q[indexer[i, j]]
+	function reg_left(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
+		return q[indexer[i-1, j]]
+	end
+
+	function reg_right(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
+		return q[indexer[i+1, j]]
+	end
+
+	function reg_top(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable 
+		return q[indexer[i, j+1]]
+	end
+
+	function reg_bot(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable 
+		return q[indexer[i, j-1]]
+	end
+	function reg_center(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable 
+		return q[indexer[i, j]]
+	end
 
 	#####
 	##### u velocity specific boundaries
 	#####
 
-	u_bottom_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		2 * bcs.u_b[i] - q[indexer[i,j]]
+	function u_bottom_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
+		return 2 * bcs.u_b[i] - q[indexer[i,j]]
+	end
 
-	u_top_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		2 * bcs.u_t[i] - q[indexer[i,j]]
+	function u_top_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
+		return 2 * bcs.u_t[i] - q[indexer[i,j]]
+	end
 
-	u_right_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		bcs.u_r[j]
+	function u_right_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
+		return bcs.u_r[j]
+	end
 
-	u_left_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		bcs.u_l[j]
+	function u_left_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
+		return bcs.u_l[j]
+	end
 
 	#####
 	##### v velocity specific boundaries
 	#####
 
-	v_right_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		2 * bcs.v_r[j] - q[indexer[i,j]]
+	function v_right_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
+		return 2 * bcs.v_r[j] - q[indexer[i,j]]
+	end
 
-	v_left_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		2 * bcs.v_l[j] - q[indexer[i,j]]
+	function v_left_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
+		return 2 * bcs.v_l[j] - q[indexer[i,j]]
+	end
 
-	v_bottom_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		bcs.v_b[i]
+	function v_bottom_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
+		return bcs.v_b[i]
+	end
 
-	v_top_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::Matrix{Int64}, i::Int64, j::Int64)::Float64 = 
-		bcs.v_t[i]
+	function v_top_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
+		return bcs.v_t[i]
+	end
 
 end
