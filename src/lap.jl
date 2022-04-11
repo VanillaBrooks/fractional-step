@@ -2,6 +2,7 @@ module laplacian
 	using Printf
 	using .Main.Structs: BoundaryConditions, Dims
 	using .Main.indexing: Indexable
+	import Base.Threads.@threads
 
 	export lap
 
@@ -13,7 +14,7 @@ module laplacian
 		center::Function
 	end
 
-	function lap(
+	function lap!(
 		dims::Dims, 
 		bcs::BoundaryConditions, 
 		iu::IU,
@@ -21,7 +22,7 @@ module laplacian
 		q::Vector{Float64},
 		# dims.nu points long
 		Lq::Vector{Float64}
-	)::Vector{Float64} where IV <: Indexable where IU <: Indexable 
+	) where IV <: Indexable where IU <: Indexable 
 
 		#Lq = zeros(dims.nu)
 
@@ -150,7 +151,7 @@ module laplacian
 		points::T,
 		indexer::Indexer,
 	) where T <: Indexable
-		for i = x_range
+		@threads for i = x_range
 			for j = y_range
 				left = indexer.left(q, bcs, points, i, j)
 				right = indexer.right(q, bcs, points, i, j)

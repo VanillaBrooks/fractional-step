@@ -1,6 +1,5 @@
 module conjugate_gradient
 	using .Main.Structs: Dims, BoundaryConditions
-	using .Main.laplacian: lap
 	using .Main.lhs: calculate_ax, AxCalculator, ConstantMatrix
 	using Printf
 

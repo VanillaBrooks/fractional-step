@@ -1,6 +1,7 @@
 module divergence
 	using .Main.Structs: Dims, BoundaryConditions
 	using .Main.indexing: Indexable
+	import Base.Threads.@threads
 
 	export div_
 
@@ -11,7 +12,7 @@ module divergence
 		center_x::Function
 	end
 
-	function div_(
+	function div!(
 		dims::Dims, 
 		bcs::BoundaryConditions, 
 		p::Vector{Float64},
@@ -20,7 +21,7 @@ module divergence
 		ip::IP,
 		# np length vector
 		div::Vector{Float64}
-	)::Vector{Float64} where IU <: Indexable where IV <: Indexable where IP <: Indexable
+	) where IU <: Indexable where IV <: Indexable where IP <: Indexable
 		#div = zeros(dims.np)
 
 		# indexing in this routine is based on the locations of the pressure
@@ -110,7 +111,7 @@ module divergence
 		ip::IP,
 		indexer::Indexer,
 	) where IU <: Indexable where IV <: Indexable where IP <: Indexable
-		for i = x_range
+		@threads for i = x_range
 			for j = y_range 
 				center_x = indexer.center_x(p, bcs, iu, i, j)
 				center_y = indexer.center_y(p, bcs, iv, i, j)

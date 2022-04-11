@@ -3,6 +3,7 @@ module advection
 
 	using .Main.Structs: BoundaryConditions, Dims
 	using .Main.indexing: Indexable
+	import Base.Threads.@threads
 
 	export adv
 
@@ -28,7 +29,7 @@ module advection
 		u_bar_y_right::Function
 	end
 
-	function adv(
+	function adv!(
 		dims::Dims, 
 		bcs::BoundaryConditions, 
 		iu::IU,
@@ -37,7 +38,7 @@ module advection
 		q::Vector{Float64},
 		# dims.nu long
 		nq::Vector{Float64}
-	)::Vector{Float64} where IU <: Indexable where IV <: Indexable where IP <: Indexable
+	) where IU <: Indexable where IV <: Indexable where IP <: Indexable
 		#nq = zeros(dims.nu)
 		nx = dims.nx
 		ny = dims.ny
@@ -131,8 +132,6 @@ module advection
 
 		y_dir_idx = IndexerY(reg_bar_left, y_dir_v_bar_right_bc, y_dir_v_bar_top_bc, reg_bar_bot, y_dir_u_bar_left, y_dir_u_bar_right_bc)
 		calculate_nq(dims, bcs, iu, iv, q, nq, nx:nx, ny-1:ny-1, y_dir_idx)
-
-		return nq
 	end
 
 	# calculate entire nq for loop for X direction values
@@ -148,7 +147,7 @@ module advection
 		indexer::IndexerX
 	) where IU <: Indexable where IV <: Indexable
 
-		for i = x_range
+		@threads for i = x_range
 			for j = y_range
 				u_bar_x_left = indexer.u_bar_x_left(q, iu, bcs, i,j)
 				u_bar_x_right = indexer.u_bar_x_right(q, iu, bcs, i,j)
@@ -164,7 +163,6 @@ module advection
 					(u_bar_y_top * v_bar_x_top - u_bar_y_bot * v_bar_x_bot) / dims.dy
 			end
 		end
-		
 	end
 
 	# calculate entire nq for loop for y direction values
@@ -179,7 +177,7 @@ module advection
 		y_range::UnitRange{Int},
 		indexer::IndexerY
 	) where IU <: Indexable where IV <: Indexable
-		for i = x_range
+		@threads for i = x_range
 			for j = y_range
 				v_bar_x_left = indexer.v_bar_x_left(q, iv, bcs, i,j)
 				v_bar_x_right = indexer.v_bar_x_right(q, iv, bcs, i,j)

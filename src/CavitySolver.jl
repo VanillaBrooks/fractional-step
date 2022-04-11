@@ -13,10 +13,10 @@ module CavitySolver
 	using .Main.Structs:BoundaryConditions
 	using .Main.Structs:Dims
 	using .Main.Structs: create_dims
-	using .Main.advection: adv
-	using .Main.laplacian: lap
-	using .Main.gradient: grad
-	using .Main.divergence: div_
+	using .Main.advection: adv!
+	using .Main.laplacian: lap!
+	using .Main.gradient: grad!
+	using .Main.divergence: div!
 	using .Main.conjugate_gradient: conj_grad, debug_conjugate_gradient
 	using .Main.lhs: FirstStepAx, SecondStepAx, calculate_ax
 	using .Main.indexing: create_ip, create_iu_iv
@@ -122,9 +122,10 @@ module CavitySolver
 		div_lhs = zeros(dims.np)
 
 		#
-		# right hand sides
+		# gradients
 		#
-		#sq_rhs = zeros(dims.nu)
+		grad_buffer_loop = zeros(dims.nu)
+		grad_buffer_lhs = zeros(dims.nu)
 
 		#
 		# Steppers for LHS
@@ -135,7 +136,7 @@ module CavitySolver
 		)
 
 		second_step_lhs_calculator = SecondStepAx(
-			dims, zero_bcs, iu, iv, ip, dt, re, div_lhs
+			dims, zero_bcs, iu, iv, ip, dt, re, div_lhs, grad_buffer_lhs
 		)
 
 		println("executing ", n_step, " steps for a solver time of ", T)
@@ -151,17 +152,14 @@ module CavitySolver
 			# First step
 			#
 
-			#laplace_bc_n= 
-			lap(dims, bcs, iu, iv, q_n, laplace_bc_n)
+			lap!(dims, bcs, iu, iv, q_n, laplace_bc_n)
 
-			#adv_n = 
-			adv(dims, bcs, iu, iv, ip, q_n, adv_n)
+			adv!(dims, bcs, iu, iv, ip, q_n, adv_n)
 
 			# here S =  I + dt nu / 2 L
 			# which becomes S = (I + dt L / (2 Re))
 			#
 			# the whole term is divided by dt
-			#@time 
 			sq_rhs = (
 				# start of S * u_n term
 				q_n / dt
@@ -177,14 +175,13 @@ module CavitySolver
 
 			rq_lhs = calculate_ax(first_step_lhs_calculator, q_n)
 
-			#println("calling into conjugate gradient")
 			uf[:] = conj_grad(first_step_lhs_calculator, rq_lhs, q_n, sq_rhs, tol)
 
 			#
 			# Second step
 			#
 			
-			div_loop = div_(dims, bcs, uf, iu, iv, ip, div_loop)
+			div_loop = div!(dims, bcs, uf, iu, iv, ip, div_loop)
 
 			second_step_rhs = div_loop ./ dt
 
@@ -205,7 +202,8 @@ module CavitySolver
 			#
 
 			# u^{n+1} calculation - this is the third step
-			q_np1 = uf - (dt * grad(dims, p_np1, iu, iv, ip))
+			grad!(dims, p_np1, iu, iv, ip, grad_buffer_loop)
+			q_np1 = uf .- (dt .* grad_buffer_loop)
 
 			if step == n_step 
 				println("\n\nfinal velocity")
@@ -213,8 +211,6 @@ module CavitySolver
 				println("")
 			end
 
-			#break
-			
 		end
 
 		return SolverResults()
@@ -298,13 +294,13 @@ bcs = create_boundary_conditions(dims)
 #debug_solver(dims, bcs)
 Re = 100.0
 #time_end = 0.01
-time_end = 0.01
+time_end = 0.1
 # Re = 100
 # T = 1
 # steps = 128
 # runtime = 355 seconds
 #@time 
-execute_solver(dims, bcs, time_end, Re)
+@time execute_solver(dims, bcs, time_end, Re)
 
 #gradient_test(dims)
 
