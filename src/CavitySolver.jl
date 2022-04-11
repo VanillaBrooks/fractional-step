@@ -132,23 +132,6 @@ module CavitySolver
 			#display(transpose(lap_bc_n))
 
 			adv_n = adv(dims, bcs, iu, iv, ip, q_n, adv_n)
-			lap_nobc_n = lap(dims, zero_bcs, iu, iv, q_n)
-
-			#
-			# assemble things
-			#
-			
-			#println("\n(3/2) * adv_n is")
-			#display(transpose(adv_n))
-
-			#println("\nadv_nm1 is")
-			#display(transpose(adv_nm1))
-
-			#println("\nq_n is")
-			#display(transpose(q_n))
-
-			#println("\n 1/2re * lap_bc_n is")
-			#display(transpose(1 / (2 * re) * lap_bc_n))
 
 			#
 			# First step
@@ -170,9 +153,6 @@ module CavitySolver
 				-
 				(1/2) * adv_nm1
 			)
-
-			#println("\n RHS vector at the first step is:")
-			#display(transpose(sq_rhs))
 
 			rq_lhs = calculate_ax(first_step_lhs_calculator, q_n)
 
