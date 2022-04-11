@@ -1,0 +1,4 @@
+name = "CavitySolver"
+uuid = "bf17c6f3-f2d2-4de2-b6b7-f468e63bd6a2"
+authors = ["Brooks <brooks@karlik.org>"]
+version = "0.1.0"
