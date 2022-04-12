@@ -37,6 +37,7 @@ module Structs
 	end
 
 	function create_dims(length::Float64, height::Float64, nx::Int, ny::Int)::Dims 
+		println("creating dims with nx = ", nx, " ny = ", ny)
 		np = nx * ny
 		nu = (nx - 1) * ny + (ny - 1) * nx
 

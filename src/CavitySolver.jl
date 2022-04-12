@@ -1,4 +1,5 @@
 include("structs.jl")
+include("io_utils.jl")
 include("indexing.jl")
 include("adv.jl")
 include("lap.jl")
@@ -21,6 +22,7 @@ module CavitySolver
 	using .Main.conjugate_gradient: conj_grad, debug_conjugate_gradient
 	using .Main.lhs: FirstStepAx, SecondStepAx, calculate_ax
 	using .Main.indexing: create_ip, create_iu_iv
+	using .Main.IoUtils: init_flowfield, write_flowfield, FlowfieldWriter, close_file
 
 	export create_dims, create_iu_iv, test, create_boundary_conditions, create_ip
 	export adv, lap, grad, div_, conj_grad, BoundaryConditions, Dims
@@ -88,12 +90,14 @@ module CavitySolver
 	end
 
 	function execute_solver(dims::Dims, bcs::BoundaryConditions, T::Float64, re::Float64)::SolverResults
+		nx = dims.nx
+		ny = dims.ny
 
-		#iu, iv = create_iu_iv(dims)
-		#ip = create_ip(dims)
-		iu = Main.indexing.Iu(dims)
-		iv = Main.indexing.Iv(dims)
-		ip = Main.indexing.Ip(dims)
+		iu, iv = create_iu_iv(dims)
+		ip = create_ip(dims)
+		#iu = Main.indexing.Iu(dims)
+		#iv = Main.indexing.Iv(dims)
+		#ip = Main.indexing.Ip(dims)
 
 		cfl_target = 1.0
 
@@ -109,10 +113,10 @@ module CavitySolver
 		#
 
 		io_flowfield = 10
-		filename = "./results/flowfield.h5"
-		flowfield_file_id = h5open(filename, "w")
-		num_flowfields = Int64(floor(n_step / io_flowfield))
-		velocity_dataset = create_dataset(flowfield_file_id, "velocity", zeros(num_flowfields, dims.nx, dims.ny))
+		curr_io_step = 1
+		num_flowfields = Int(floor(n_step / io_flowfield)) + 1
+
+		writer=  init_flowfield(dims, bcs, iu, iv, ip, num_flowfields)
 
 		zero_bcs = zero_boundary_conditions(dims)
 
@@ -169,7 +173,12 @@ module CavitySolver
 			dims, zero_bcs, iu, iv, ip, dt, re, div_lhs, grad_buffer_lhs
 		)
 
-		println("executing ", n_step, " steps for a solver time of ", T, " with a dt = ", dt, "re = ", re)
+		println("executing ", n_step, 
+				" steps for a solver time of ", T, 
+				" with a dt = ", dt, 
+				" re = ", re, 
+				" and ", num_flowfields, " flowfields"
+		)
 
 		for step = 1:n_step
 			# step variables forward once
@@ -178,7 +187,7 @@ module CavitySolver
 			p_n = p_np1
 			adv_nm1 = adv_n
 
-			println("executing step")
+			println("executing step ", step)
 
 			#
 			# First step
@@ -251,9 +260,13 @@ module CavitySolver
 			#	println("")
 			#end
 
+			if step % io_flowfield == 0 || step == 1
+				write_flowfield(writer, q_np1, p_np1, curr_io_step, step*dt)
+				curr_io_step += 1
+			end
 		end
 
-		close(flowfield_file_id)
+		close_file(writer)
 
 		return SolverResults()
 	end
@@ -302,45 +315,45 @@ module CavitySolver
 
 end
 
-#function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
-#
-#	iu, iv = create_iu_iv(dims)
-#	ip = create_ip(dims)
-#
-#	q = zeros(dims.nu)
-#	p = ones(dims.np)
-#
-#	a, b = size(iu)
-#	c, d = size(iv)
-#	e = size(q)
-#	show(a*b + c*d)
-#	println("")
-#	show(e)
-#	println("")
-#
-#	adv(dims, bcs, iu, iv, ip, q)
-#	lap(dims, bcs, iu, iv, q)
-#	grad(dims, p, iu, iv, ip)
-#
-#	div_(dims, bcs, q, iu, iv, ip)
-#end
 
-#n = 16
+using .CavitySolver
+function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
 
-#using .CavitySolver
-#const dims = create_dims(1.0, 1.0, n,n)
-#bcs = create_boundary_conditions(dims)
+	iu, iv = create_iu_iv(dims)
+	ip = create_ip(dims)
 
-#debug_solver(dims, bcs)
-#Re = 10.0
-#time_end = 0.01
-time_end = 0.1
+	q = zeros(dims.nu)
+	p = ones(dims.np)
+
+	a, b = size(iu)
+	c, d = size(iv)
+	e = size(q)
+	show(a*b + c*d)
+	println("")
+	show(e)
+	println("")
+
+	adv(dims, bcs, iu, iv, ip, q)
+	lap(dims, bcs, iu, iv, q)
+	grad(dims, p, iu, iv, ip)
+
+	div_(dims, bcs, q, iu, iv, ip)
+end
+
+
+nx = 60
+ny = 64
+Re = 1000.
+time_end = 10. 
+const dims = create_dims(1.0, 1.0, nx,ny)
+bcs = create_boundary_conditions(dims)
+execute_solver(dims, bcs, time_end, Re)
+
 # Re = 100
 # T = 1
 # steps = 128
 # runtime = 355 seconds
 #@time 
-#execute_solver(dims, bcs, time_end, Re)
 
 #gradient_test(dims)
 

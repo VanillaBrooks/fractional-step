@@ -135,7 +135,7 @@ module advection
 	end
 
 	# calculate entire nq for loop for X direction values
-	@inline function calculate_nq(
+	function calculate_nq(
 		dims::Dims,
 		bcs::BoundaryConditions,
 		iu::IU,
@@ -147,7 +147,8 @@ module advection
 		indexer::IndexerX
 	) where IU <: Indexable where IV <: Indexable
 
-		@threads for i = x_range
+		#@threads 
+		for i = x_range
 			for j = y_range
 				u_bar_x_left = indexer.u_bar_x_left(q, iu, bcs, i,j)
 				u_bar_x_right = indexer.u_bar_x_right(q, iu, bcs, i,j)
@@ -250,10 +251,10 @@ module advection
 	#
 
 	x_dir_u_bar_left_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (q[indexer[i,j]] + bcs.u_l[i])
+		(1/2) * (q[indexer[i,j]] + bcs.u_l[j])
 
 	x_dir_u_bar_right_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (q[indexer[i,j]] + bcs.u_r[i])
+		(1/2) * (q[indexer[i,j]] + bcs.u_r[j])
 	
 	######
 	###### Y DIRECTION INDEXING
