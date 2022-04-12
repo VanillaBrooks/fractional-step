@@ -70,7 +70,7 @@ module indexing
 				matrix_val = iu[i,j]
 				linear_val = iu_linear[i,j]
 
-				#println("matrix: ", matrix_val, " linear ", linear_val)
+				println("matrix: ", matrix_val, " linear ", linear_val)
 
 				@assert matrix_val == linear_val
 			end
@@ -114,16 +114,20 @@ module indexing
 
 		k = 1
 		# init iu values
-		for i = 1:dims.nx -1
-			for j = 1:dims.ny
+		#for i = 1:dims.nx -1
+		#	for j = 1:dims.ny
+		for j = 1:dims.ny
+			for i = 1:dims.nx -1
 				iu[i,j] = k
 				k += 1
 			end
 		end
 
 		# init iv values
-		for i = 1:dims.nx
-			for j = 1:dims.ny -1
+		#for i = 1:dims.nx
+		#	for j = 1:dims.ny -1
+		for j = 1:dims.ny -1
+			for i = 1:dims.nx
 				iv[i,j] = k
 				k += 1
 			end
@@ -136,8 +140,10 @@ module indexing
 		ip = zeros(Int, dims.nx, dims.ny)
 
 		k = 1
-		for i = 1:dims.nx
-			for j = 1:dims.ny
+		#for i = 1:dims.nx
+		#	for j = 1:dims.ny
+		for j = 1:dims.ny
+			for i = 1:dims.nx
 				ip[i,j] = k
 				k += 1
 			end

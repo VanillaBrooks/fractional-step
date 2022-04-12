@@ -9,6 +9,7 @@ include("conjugate_gradient.jl")
 
 module CavitySolver
 	using Printf
+	using HDF5
 
 	using .Main.Structs:BoundaryConditions
 	using .Main.Structs:Dims
@@ -32,6 +33,17 @@ module CavitySolver
 		println("for ", name, ":")
 		for i = 1:length(vec)
 			println(i, " ", vec[i])
+		end
+	end
+
+	function print_vector(
+			vec1::Vector{<:AbstractFloat}, name1::String,
+			vec2::Vector{<:AbstractFloat}, name2::String 
+	)
+		println(" \t", name1, "\t", name2)
+		for i = 1:length(vec1)
+			#println(i, "\t", vec1[i], "\t", vec2[i])
+			@printf "%d \t %.5f \t %.5f\n" i vec1[i] vec2[i]
 		end
 	end
 
@@ -88,10 +100,19 @@ module CavitySolver
 		tol::Float64 = 1E-6
 
 		dt = calculate_dt(dims, bcs, cfl_target, re)
-		dt = 0.0391
+		#dt = 0.0391
 
 		n_step = Int64(floor(T / dt))
-		n_step = 1
+
+		#
+		# Setup Hdf5 file stuff
+		#
+
+		io_flowfield = 10
+		filename = "./results/flowfield.h5"
+		flowfield_file_id = h5open(filename, "w")
+		num_flowfields = Int64(floor(n_step / io_flowfield))
+		velocity_dataset = create_dataset(flowfield_file_id, "velocity", zeros(num_flowfields, dims.nx, dims.ny))
 
 		zero_bcs = zero_boundary_conditions(dims)
 
@@ -148,7 +169,7 @@ module CavitySolver
 			dims, zero_bcs, iu, iv, ip, dt, re, div_lhs, grad_buffer_lhs
 		)
 
-		println("executing ", n_step, " steps for a solver time of ", T, " with a dt = ", dt)
+		println("executing ", n_step, " steps for a solver time of ", T, " with a dt = ", dt, "re = ", re)
 
 		for step = 1:n_step
 			# step variables forward once
@@ -165,9 +186,9 @@ module CavitySolver
 
 			lap!(dims, bcs, iu, iv, q_n, laplace_bc_n)
 
-			print_vector(laplace_bc_n, "laplace bc")
-
 			adv!(dims, bcs, iu, iv, ip, q_n, adv_n)
+
+			#print_vector(laplace_bc_n, "laplace bc", adv_n, "advection")
 
 			# here S =  I + dt nu / 2 L
 			# which becomes S = (I + dt L / (2 Re))
@@ -188,9 +209,13 @@ module CavitySolver
 
 			rq_lhs = calculate_ax(first_step_lhs_calculator, q_n)
 
+			#print_vector(rq_lhs, "RHS initial guess")
+
 			uf[:] = conj_grad(first_step_lhs_calculator, rq_lhs, q_n, sq_rhs, tol)
 
-			print_vector(uf, "q_star / uf")
+			#if step == n_step
+			#	print_vector(uf, "q_star / uf")
+			#end
 
 			#
 			# Second step
@@ -205,12 +230,12 @@ module CavitySolver
 			p_np1 = conj_grad(second_step_lhs_calculator, lhs_estimate, p_n, second_step_rhs, tol)
 			lhs_final = calculate_ax(second_step_lhs_calculator, p_np1)
 
-			if step == n_step 
-				println("\n\n\nLHS final --- RHS actual")
-				for i in 1:dims.np
-					println(lhs_final[i], "   ", second_step_rhs[i])
-				end
-			end
+			#if step == n_step 
+			#	println("\n\n\nLHS final --- RHS actual")
+			#	for i in 1:dims.np
+			#		println(lhs_final[i], "   ", second_step_rhs[i])
+			#	end
+			#end
 
 			#
 			# Third fracitonal step
@@ -220,13 +245,15 @@ module CavitySolver
 			grad!(dims, p_np1, iu, iv, ip, grad_buffer_loop)
 			q_np1 = uf .- (dt .* grad_buffer_loop)
 
-			if step == n_step 
-				println("\n\nfinal velocity")
-				display(q_np1)
-				println("")
-			end
+			#if step == n_step 
+			#	println("\n\nfinal velocity")
+			#	display(q_np1)
+			#	println("")
+			#end
 
 		end
+
+		close(flowfield_file_id)
 
 		return SolverResults()
 	end
@@ -275,39 +302,37 @@ module CavitySolver
 
 end
 
-using .CavitySolver
-using Printf
+#function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
+#
+#	iu, iv = create_iu_iv(dims)
+#	ip = create_ip(dims)
+#
+#	q = zeros(dims.nu)
+#	p = ones(dims.np)
+#
+#	a, b = size(iu)
+#	c, d = size(iv)
+#	e = size(q)
+#	show(a*b + c*d)
+#	println("")
+#	show(e)
+#	println("")
+#
+#	adv(dims, bcs, iu, iv, ip, q)
+#	lap(dims, bcs, iu, iv, q)
+#	grad(dims, p, iu, iv, ip)
+#
+#	div_(dims, bcs, q, iu, iv, ip)
+#end
 
-function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
+#n = 16
 
-	iu, iv = create_iu_iv(dims)
-	ip = create_ip(dims)
-
-	q = zeros(dims.nu)
-	p = ones(dims.np)
-
-	a, b = size(iu)
-	c, d = size(iv)
-	e = size(q)
-	show(a*b + c*d)
-	@printf "\n"
-	show(e)
-	@printf "\n"
-
-	adv(dims, bcs, iu, iv, ip, q)
-	lap(dims, bcs, iu, iv, q)
-	grad(dims, p, iu, iv, ip)
-
-	div_(dims, bcs, q, iu, iv, ip)
-end
-
-n = 16
-
-const dims = create_dims(1.0, 1.0, n,n)
-bcs = create_boundary_conditions(dims)
+#using .CavitySolver
+#const dims = create_dims(1.0, 1.0, n,n)
+#bcs = create_boundary_conditions(dims)
 
 #debug_solver(dims, bcs)
-Re = 10.0
+#Re = 10.0
 #time_end = 0.01
 time_end = 0.1
 # Re = 100
@@ -315,7 +340,7 @@ time_end = 0.1
 # steps = 128
 # runtime = 355 seconds
 #@time 
-execute_solver(dims, bcs, time_end, Re)
+#execute_solver(dims, bcs, time_end, Re)
 
 #gradient_test(dims)
 

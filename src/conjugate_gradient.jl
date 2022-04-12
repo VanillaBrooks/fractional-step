@@ -63,7 +63,7 @@ module conjugate_gradient
 
 		x = x_guess
 
-		while i < imax && (delta_new > tol^2 * delta_0 || i == 0)
+		while i < imax && delta_new > tol^2 * delta_0
 			# q = Ad
 			q = calculate_ax(step_context, d)
 

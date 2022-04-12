@@ -35,11 +35,11 @@ module lhs
 		# R * u_f = u_f - L*u_f / (2 * re)
 		#
 		# the whole term is effectivly divided by dt
-		#ctx.lap_nobc_n = 
+
 		lap!(ctx.dims, ctx.zero_bcs, ctx.iu, ctx.iv, x, ctx.lap_nobc_n)
 
 		ctx.lap_nobc_n = ctx.lap_nobc_n .* (1 / (2 * ctx.re))
-		ctx.lap_nobc_n = x./ctx.dt - ctx.lap_nobc_n
+		ctx.lap_nobc_n = (x./ctx.dt) .- ctx.lap_nobc_n
 
 		return ctx.lap_nobc_n
 	end
