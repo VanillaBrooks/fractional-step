@@ -93,11 +93,14 @@ module CavitySolver
 		nx = dims.nx
 		ny = dims.ny
 
-		iu, iv = create_iu_iv(dims)
-		ip = create_ip(dims)
-		#iu = Main.indexing.Iu(dims)
-		#iv = Main.indexing.Iv(dims)
-		#ip = Main.indexing.Ip(dims)
+		#iu, iv = create_iu_iv(dims)
+		#ip = create_ip(dims)
+		iu = Main.indexing.Iu(dims)
+		iv = Main.indexing.Iv(dims)
+		ip = Main.indexing.Ip(dims)
+		#iu = Main.indexing.IuT(dims)
+		#iv = Main.indexing.IvT(dims)
+		#ip = Main.indexing.IpT(dims)
 
 		cfl_target = 1.0
 
@@ -341,11 +344,11 @@ function debug_solver(dims::CavitySolver.Dims, bcs::BoundaryConditions)
 end
 
 
-nx = 60
-ny = 64
-Re = 1000.
-time_end = 10. 
-const dims = create_dims(1.0, 1.0, nx,ny)
+nx = 80
+ny = nx
+Re = 400.
+time_end = 20.
+const dims = create_dims(1.0, 1.0, nx, ny)
 bcs = create_boundary_conditions(dims)
 execute_solver(dims, bcs, time_end, Re)
 

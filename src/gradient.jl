@@ -2,7 +2,6 @@ module gradient
 	using .Main.Structs: Dims, BoundaryConditions
 	using .Main.indexing: Indexable
 	using Printf
-	import Base.Threads.@threads
 
 	export grad
 	
@@ -22,21 +21,21 @@ module gradient
 
 		## dp / dx
 
-		@threads for i = 2:nx
+		for i = 2:nx
 			for j = 1:ny
-				sum = p[ip[i,j]] - p[ip[i-1,j]]
+				@inbounds sum = p[ip[i,j]] - p[ip[i-1,j]]
 
-				grad[iu[i-1,j]] = sum / dims.dx
+				@inbounds grad[iu[i-1,j]] = sum / dims.dx
 			end
 		end
 
 		# dp / dy
 	
-		@threads for i = 1:nx
+		for i = 1:nx
 			for j = 2:ny
-				sum = p[ip[i,j]] - p[ip[i,j-1]]
+				@inbounds sum = p[ip[i,j]] - p[ip[i,j-1]]
 
-				grad[iv[i,j-1]] = sum / dims.dy
+				@inbounds grad[iv[i,j-1]] = sum / dims.dy
 			end
 		end
 

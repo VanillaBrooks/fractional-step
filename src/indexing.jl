@@ -3,7 +3,7 @@ module indexing
 
 	using .Main.Structs: Dims, create_dims
 
-	export Indexable, check_indexing, Iu, Iv, Ip
+	export Indexable, check_indexing, Iu, Iv, Ip, IuT, IvT, IpT
 
 	abstract type Indexable end
 
@@ -47,6 +47,38 @@ module indexing
 		return (elem_per_col * column_num) + j + offset
 	end
 
+	struct IuT <: Indexable
+		dims::Dims
+	end
+
+	function Base.getindex(rt::IuT, i::Int64, j::Int64)::Int64
+		offset = 0
+		elem_per_row = rt.dims.nx-1
+		row_num = j - 1
+		return (elem_per_row * row_num) + i + offset
+	end
+
+	struct IvT <: Indexable
+		dims::Dims
+	end
+
+	function Base.getindex(rt::IvT, i::Int64, j::Int64)::Int64
+		offset = (rt.dims.nx - 1) * rt.dims.ny
+		elem_per_row = rt.dims.nx
+		row_num = j - 1
+		return (elem_per_row * row_num) + i + offset
+	end
+
+	struct IpT <: Indexable
+		dims::Dims
+	end
+
+	function Base.getindex(rt::IpT, i::Int64, j::Int64)::Int64
+		offset = 0
+		elem_per_row = rt.dims.nx
+		row_num = j - 1
+		return (elem_per_row * row_num) + i + offset
+	end
 
 	function check_indexing()
 		nx = 10
@@ -61,6 +93,26 @@ module indexing
 		iv_linear = Iv(dims)
 		ip_linear = Ip(dims)
 
+		check_helper(nx, ny, iu,iv,ip, iu_linear, iv_linear, ip_linear)
+
+		iu, iv = create_iu_iv_aditya(dims)
+		ip = create_ip_aditya(dims)
+
+		iu_linear = IuT(dims)
+		iv_linear = IvT(dims)
+		ip_linear = IpT(dims)
+
+		check_helper(nx, ny, iu,iv,ip, iu_linear, iv_linear, ip_linear)
+	end
+
+	function check_helper(nx::Int, ny::Int, 
+		iu::StoredIndexing{Int},
+		iv::StoredIndexing{Int},
+		ip::StoredIndexing{Int},
+		iu_linear,
+		iv_linear,
+		ip_linear,
+	)
 		#
 		# check IP
 		#
@@ -105,7 +157,6 @@ module indexing
 				@assert matrix_val == linear_val
 			end
 		end
-
 	end
 
 	function create_iu_iv_aditya(dims::Dims)::Tuple{StoredIndexing{Int}, StoredIndexing{Int}}
@@ -114,8 +165,6 @@ module indexing
 
 		k = 1
 		# init iu values
-		#for i = 1:dims.nx -1
-		#	for j = 1:dims.ny
 		for j = 1:dims.ny
 			for i = 1:dims.nx -1
 				iu[i,j] = k
@@ -124,8 +173,6 @@ module indexing
 		end
 
 		# init iv values
-		#for i = 1:dims.nx
-		#	for j = 1:dims.ny -1
 		for j = 1:dims.ny -1
 			for i = 1:dims.nx
 				iv[i,j] = k

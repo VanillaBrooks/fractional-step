@@ -1,7 +1,6 @@
 module divergence
 	using .Main.Structs: Dims, BoundaryConditions
 	using .Main.indexing: Indexable
-	import Base.Threads.@threads
 
 	export div_
 
@@ -111,7 +110,7 @@ module divergence
 		ip::IP,
 		indexer::Indexer,
 	) where IU <: Indexable where IV <: Indexable where IP <: Indexable
-		@threads for i = x_range
+		for i = x_range
 			for j = y_range 
 				center_x = indexer.center_x(p, bcs, iu, i, j)
 				center_y = indexer.center_y(p, bcs, iv, i, j)
@@ -123,7 +122,7 @@ module divergence
 				diff_x = (center_x - left_x) / dims.dx
 				diff_y = (center_y - bottom_y) / dims.dy
 
-				div[ip[i,j]] = diff_x + diff_y
+				@inbounds div[ip[i,j]] = diff_x + diff_y
 			end
 		end
 	end
@@ -133,30 +132,30 @@ module divergence
 	####
 
 	reg_center(p::Vector{Float64}, bcs::BoundaryConditions, indexer, i::Int64, j::Int64)::Float64 = 
-		p[indexer[i,j]]
+		@inbounds p[indexer[i,j]]
 	reg_left(p::Vector{Float64}, bcs::BoundaryConditions, indexer, i::Int64, j::Int64)::Float64 = 
-		p[indexer[i-1,j]]
+		@inbounds p[indexer[i-1,j]]
 	reg_bottom(p::Vector{Float64}, bcs::BoundaryConditions, indexer, i::Int64, j::Int64)::Float64 = 
-		p[indexer[i,j-1]]
+		@inbounds p[indexer[i,j-1]]
 
 	####
 	#### Y Velocity boundary conditions for top / bottom
 	####
 
 	y_dir_bottom_bc(p::Vector{Float64}, bcs::BoundaryConditions, indexer, i::Int64, j::Int64)::Float64 = 
-		bcs.v_b[i]
+		@inbounds bcs.v_b[i]
 
 	y_dir_top_bc(p::Vector{Float64}, bcs::BoundaryConditions, indexer, i::Int64, j::Int64)::Float64 = 
-		bcs.v_t[i]
+		@inbounds bcs.v_t[i]
 
 	####
 	#### X Velocity boundary conditions for top / bottom
 	####
 	
 	x_dir_left_bc(p::Vector{Float64}, bcs::BoundaryConditions, indexer, i::Int64, j::Int64)::Float64 = 
-		bcs.u_l[j]
+		@inbounds bcs.u_l[j]
 
 	x_dir_right_bc(p::Vector{Float64}, bcs::BoundaryConditions, indexer, i::Int64, j::Int64)::Float64 = 
-		bcs.u_r[j]
+		@inbounds bcs.u_r[j]
 		
 end

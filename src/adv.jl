@@ -3,7 +3,6 @@ module advection
 
 	using .Main.Structs: BoundaryConditions, Dims
 	using .Main.indexing: Indexable
-	import Base.Threads.@threads
 
 	export adv
 
@@ -135,7 +134,7 @@ module advection
 	end
 
 	# calculate entire nq for loop for X direction values
-	function calculate_nq(
+	@inline function calculate_nq(
 		dims::Dims,
 		bcs::BoundaryConditions,
 		iu::IU,
@@ -147,7 +146,6 @@ module advection
 		indexer::IndexerX
 	) where IU <: Indexable where IV <: Indexable
 
-		#@threads 
 		for i = x_range
 			for j = y_range
 				u_bar_x_left = indexer.u_bar_x_left(q, iu, bcs, i,j)
@@ -160,14 +158,14 @@ module advection
 				v_bar_x_bot = indexer.v_bar_x_bot(q, iv, bcs, i, j)
 
 				# calculate the final value
-				nq[iu[i,j]] = (u_bar_x_right^2 - u_bar_x_left^2)/dims.dx + 
+				@inbounds nq[iu[i,j]] = (u_bar_x_right^2 - u_bar_x_left^2)/dims.dx + 
 					(u_bar_y_top * v_bar_x_top - u_bar_y_bot * v_bar_x_bot) / dims.dy
 			end
 		end
 	end
 
 	# calculate entire nq for loop for y direction values
-	function calculate_nq(
+	@inline function calculate_nq(
 		dims::Dims,
 		bcs::BoundaryConditions,
 		iu::IU,
@@ -178,7 +176,7 @@ module advection
 		y_range::UnitRange{Int},
 		indexer::IndexerY
 	) where IU <: Indexable where IV <: Indexable
-		@threads for i = x_range
+		for i = x_range
 			for j = y_range
 				v_bar_x_left = indexer.v_bar_x_left(q, iv, bcs, i,j)
 				v_bar_x_right = indexer.v_bar_x_right(q, iv, bcs, i,j)
@@ -189,7 +187,7 @@ module advection
 				u_bar_y_left = indexer.u_bar_y_left(q, iu, bcs, i, j)
 				u_bar_y_right = indexer.u_bar_y_right(q, iu, bcs, i, j)
 
-				nq[iv[i,j]] = (u_bar_y_right * v_bar_x_right - u_bar_y_left * v_bar_x_left) / dims.dx + 
+				@inbounds nq[iv[i,j]] = (u_bar_y_right * v_bar_x_right - u_bar_y_left * v_bar_x_left) / dims.dx + 
 					(v_bar_y_top^2 - v_bar_y_bot^2) / dims.dy
 			end
 		end
@@ -200,15 +198,15 @@ module advection
 	######
 
 	reg_bar_left(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (q[indexer[i-1,j]] + q[indexer[i,j]])
+		@inbounds (1/2) * (q[indexer[i-1,j]] + q[indexer[i,j]])
 
 	reg_bar_right(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (q[indexer[i+1,j]] + q[indexer[i,j]])
+		@inbounds (1/2) * (q[indexer[i+1,j]] + q[indexer[i,j]])
 
 	reg_bar_top(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (q[indexer[i,j+1]] + q[indexer[i,j]])
+		@inbounds (1/2) * (q[indexer[i,j+1]] + q[indexer[i,j]])
 	reg_bar_bot(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (q[indexer[i,j-1]] + q[indexer[i,j]])
+		@inbounds (1/2) * (q[indexer[i,j-1]] + q[indexer[i,j]])
 
 	######
 	###### X DIRECTION INDEXING
@@ -220,10 +218,10 @@ module advection
 	
 	x_dir_v_bar_top(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
 		# dont need j+1 here since values at y=j are already above the current i value
-		(1/2) * (q[indexer[i+1,j]] + q[indexer[i,j]])
+		@inbounds (1/2) * (q[indexer[i+1,j]] + q[indexer[i,j]])
 
 	x_dir_v_bar_bot(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (q[indexer[i+1,j-1]] + q[indexer[i,j-1]])
+		@inbounds (1/2) * (q[indexer[i+1,j-1]] + q[indexer[i,j-1]])
 
 	#
 	# boundary stuff top / bottom
@@ -231,30 +229,30 @@ module advection
 
 	# top of boundary indexing for y
 	x_dir_v_bar_top_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (bcs.v_t[i] + bcs.v_t[i+1])
+		@inbounds (1/2) * (bcs.v_t[i] + bcs.v_t[i+1])
 
 	# bottom boundary indexing for y
 	x_dir_v_bar_bot_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (bcs.v_b[i] + bcs.v_b[i+1])
+		@inbounds (1/2) * (bcs.v_b[i] + bcs.v_b[i+1])
 
 	
 	# bot average with the ghost node is just the boundary condition
 	x_dir_u_bar_bot_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		bcs.u_b[i]
+		@inbounds bcs.u_b[i]
 
 	# top average with the ghost node is just the boundary condition
 	x_dir_u_bar_top_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		bcs.u_t[i]
+		@inbounds bcs.u_t[i]
 
 	#
 	# boundary stuff left / right
 	#
 
 	x_dir_u_bar_left_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (q[indexer[i,j]] + bcs.u_l[j])
+		@inbounds (1/2) * (q[indexer[i,j]] + bcs.u_l[j])
 
 	x_dir_u_bar_right_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (q[indexer[i,j]] + bcs.u_r[j])
+		@inbounds (1/2) * (q[indexer[i,j]] + bcs.u_r[j])
 	
 	######
 	###### Y DIRECTION INDEXING
@@ -266,35 +264,35 @@ module advection
 	#
 
 	y_dir_u_bar_left(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (q[indexer[i-1,j]] + q[indexer[i-1,j+1]])
+		@inbounds (1/2) * (q[indexer[i-1,j]] + q[indexer[i-1,j+1]])
 
 	y_dir_u_bar_right(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
 		# values with x=i are already on the right side of our node
-		(1/2) * (q[indexer[i,j]] + q[indexer[i,j+1]])
+		@inbounds (1/2) * (q[indexer[i,j]] + q[indexer[i,j+1]])
 
 	#
 	# top and bottom boundary conditions for y velocity
 	#
 
 	y_dir_v_bar_bot_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (bcs.v_b[i] + q[indexer[i,j]])
+		@inbounds (1/2) * (bcs.v_b[i] + q[indexer[i,j]])
 
 	y_dir_v_bar_top_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (bcs.v_t[i] + q[indexer[i,j]])
+		@inbounds (1/2) * (bcs.v_t[i] + q[indexer[i,j]])
 
 	#
 	# left and right conditions for y velocity
 	#
 	
 	y_dir_v_bar_left_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		bcs.v_l[j]
+		@inbounds bcs.v_l[j]
 
 	y_dir_v_bar_right_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		bcs.v_r[j]
+		@inbounds bcs.v_r[j]
 
 	y_dir_u_bar_left_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (bcs.u_l[j] + bcs.u_l[j+1])
+		@inbounds (1/2) * (bcs.u_l[j] + bcs.u_l[j+1])
 
 	y_dir_u_bar_right_bc(q::Vector{Float64}, indexer, bcs::BoundaryConditions, i::Int, j::Int)::Float64 =
-		(1/2) * (bcs.u_r[j] + bcs.u_r[j+1])
+		@inbounds (1/2) * (bcs.u_r[j] + bcs.u_r[j+1])
 end

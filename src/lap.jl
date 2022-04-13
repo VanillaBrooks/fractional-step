@@ -2,7 +2,6 @@ module laplacian
 	using Printf
 	using .Main.Structs: BoundaryConditions, Dims
 	using .Main.indexing: Indexable
-	import Base.Threads.@threads
 
 	export lap
 
@@ -151,7 +150,7 @@ module laplacian
 		points::T,
 		indexer::Indexer,
 	) where T <: Indexable
-		@threads for i = x_range
+		 for i = x_range
 			for j = y_range
 				left = indexer.left(q, bcs, points, i, j)
 				right = indexer.right(q, bcs, points, i, j)
@@ -164,28 +163,28 @@ module laplacian
 				d_dx2 = (right - 2*center + left) / dims.dx^2
 				d_dy2 = (top - 2*center + bottom) / dims.dy^2
 
-				Lq[points[i,j]] = d_dx2 + d_dy2
+				@inbounds Lq[points[i,j]] = d_dx2 + d_dy2
 			end
 		end
 	end
 
 	function reg_left(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
-		return q[indexer[i-1, j]]
+		@inbounds return q[indexer[i-1, j]]
 	end
 
 	function reg_right(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
-		return q[indexer[i+1, j]]
+		@inbounds return q[indexer[i+1, j]]
 	end
 
 	function reg_top(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable 
-		return q[indexer[i, j+1]]
+		@inbounds return q[indexer[i, j+1]]
 	end
 
 	function reg_bot(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable 
-		return q[indexer[i, j-1]]
+		@inbounds return q[indexer[i, j-1]]
 	end
 	function reg_center(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable 
-		return q[indexer[i, j]]
+		@inbounds return q[indexer[i, j]]
 	end
 
 	#####
@@ -193,19 +192,19 @@ module laplacian
 	#####
 
 	function u_bottom_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
-		return 2 * bcs.u_b[i] - q[indexer[i,j]]
+		@inbounds return 2 * bcs.u_b[i] - q[indexer[i,j]]
 	end
 
 	function u_top_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
-		return 2 * bcs.u_t[i] - q[indexer[i,j]]
+		@inbounds return 2 * bcs.u_t[i] - q[indexer[i,j]]
 	end
 
 	function u_right_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
-		return bcs.u_r[j]
+		@inbounds return bcs.u_r[j]
 	end
 
 	function u_left_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
-		return bcs.u_l[j]
+		@inbounds return bcs.u_l[j]
 	end
 
 	#####
@@ -213,19 +212,19 @@ module laplacian
 	#####
 
 	function v_right_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
-		return 2 * bcs.v_r[j] - q[indexer[i,j]]
+		@inbounds return 2 * bcs.v_r[j] - q[indexer[i,j]]
 	end
 
 	function v_left_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
-		return 2 * bcs.v_l[j] - q[indexer[i,j]]
+		@inbounds return 2 * bcs.v_l[j] - q[indexer[i,j]]
 	end
 
 	function v_bottom_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
-		return bcs.v_b[i]
+		@inbounds return bcs.v_b[i]
 	end
 
 	function v_top_bc(q::Vector{Float64}, bcs::BoundaryConditions, indexer::T, i::Int64, j::Int64)::Float64 where T <: Indexable
-		return bcs.v_t[i]
+		@inbounds return bcs.v_t[i]
 	end
 
 end
